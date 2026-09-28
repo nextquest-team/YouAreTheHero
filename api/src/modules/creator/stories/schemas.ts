@@ -77,6 +77,18 @@ export const storyFullSchema = storySchema.extend({
 });
 export type StoryFullDto = z.infer<typeof storyFullSchema>;
 
+// Problème relevé avant publication. `sceneId` pointe la scène concernée, s'il y en a une.
+export const publishIssueSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  sceneId: z.uuid().nullable(),
+});
+export type PublishIssue = z.infer<typeof publishIssueSchema>;
+
+// Réponse de POST /publish : l'histoire publiée et les avertissements (non bloquants).
+export const publishResultSchema = storySchema.extend({ warnings: z.array(publishIssueSchema) });
+export type PublishResultDto = z.infer<typeof publishResultSchema>;
+
 export const createStoryBodySchema = z.object({
   title: z.string().min(1).max(120),
   summary: z.string().default(''),
