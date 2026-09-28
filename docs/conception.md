@@ -234,11 +234,12 @@ mobile/src/app/
 ├── (player)/story/[id].tsx     # B : fiche de l'histoire (Commencer / Reprendre, avis)
 ├── (player)/play/[storyId].tsx # B : écran de jeu (scène, choix, combat, inventaire et changements)
 ├── (player)/selfie.tsx         # B : caméra frontale
-├── (creator)/_layout.tsx       # A : Tabs
+├── (creator)/_layout.tsx       # A : Stack (onglets, puis éditeur par-dessus)
+├── (creator)/(tabs)/           # A : Tabs
 │   ├── index.tsx               #   Mes histoires
 │   ├── media.tsx               #   Médiathèque
 │   └── profile.tsx             #   → composant Profil de A
-└── (creator)/story/[id]/       # A : Stack d'édition
+└── (creator)/editor/[id]/      # A : Stack d'édition (/editor, pour ne pas partager l'URL /story/[id] du joueur)
     ├── index.tsx               #   infos, couverture, avec ou sans combats, publication
     ├── stats.tsx
     ├── enemies.tsx
