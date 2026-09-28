@@ -16,4 +16,4 @@
 - [ ] Typecheck et tests API OK (`npm run typecheck`, `npm test` dans `api/`)
 - [ ] Migration générée et commitée si le schéma change
 - [ ] Aucun `.env` ni secret commité
-- [ ] Libellés et textes dans `src/i18n/fr.ts`
+- [ ] Libellés et textes dans `mobile/src/i18n/fr.ts`
