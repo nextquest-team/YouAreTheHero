@@ -1,7 +1,6 @@
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/index.js';
-import { choices, enemies, items, scenes, statDefinitions, stories, users } from '../../db/schema/index.js';
-import { saves } from '../../db/schema/play.js';
+import { choices, enemies, items, saves, scenes, statDefinitions, stories, users } from '../../db/schema/index.js';
 import { conditionLabel, evaluateCondition } from '../../engine/conditions.js';
 import { applyEffects, isDead } from '../../engine/effects.js';
 import type { CombatState, SaveStats } from '../../engine/schemas.js';
@@ -203,7 +202,8 @@ export async function start(userId: string, storyId: string, input: StartBody): 
         initialStats[stat.id] = Number.isNaN(parsed) ? 0 : parsed;
       } else {
         const provided = input.textStats?.[stat.id];
-        initialStats[stat.id] = provided && provided.length > 0 && provided.length <= 50 ? provided : stat.defaultValue;
+        // La longueur est validée par startBodySchema ; une chaîne vide reprend la valeur par défaut.
+        initialStats[stat.id] = provided || stat.defaultValue;
       }
     }
 

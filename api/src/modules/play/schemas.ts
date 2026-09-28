@@ -5,7 +5,7 @@ import { uploadPathSchema } from '../../lib/schemas.js';
 export const storyIdParamSchema = z.object({ storyId: z.uuid() });
 
 export const startBodySchema = z.object({
-  textStats: z.record(z.uuid(), z.string()).optional(),
+  textStats: z.record(z.uuid(), z.string().trim().max(50)).optional(),
   heroFaceUrl: uploadPathSchema.optional(),
 });
 export type StartBody = z.infer<typeof startBodySchema>;

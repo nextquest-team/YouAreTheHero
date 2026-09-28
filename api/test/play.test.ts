@@ -96,6 +96,27 @@ describe('module jeu (/play, /me/saves)', () => {
     expect(stat.value).toBe('Aragorn');
   });
 
+  it('textStats de plus de 50 caractères répond 422', async () => {
+    const nomStat = await getStat('Nom');
+
+    const response = await start({ textStats: { [nomStat.id]: 'A'.repeat(51) } });
+
+    expect(response.statusCode).toBe(422);
+  });
+
+  it('start sur une histoire non publiée répond 404', async () => {
+    const [draft] = await db.select().from(stories).where(eq(stories.published, false));
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/play/${draft.id}/start`,
+      headers: authHeaders(),
+      payload: {},
+    });
+
+    expect(response.statusCode).toBe(404);
+  });
+
   it('un choix avec effet Force +1 modifie les stats, et le choix conditionné à Force 7 reste verrouillé', async () => {
     await start();
     const entree = await getScene('Entrée de la crypte');
