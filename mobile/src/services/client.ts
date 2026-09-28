@@ -52,15 +52,35 @@ export async function apiFetch<T>(path: string, { method = 'GET', body, query }:
   const headers: Record<string, string> = {};
   // Pas de Content-Type sans corps : Fastify refuse un JSON vide (400).
   if (body !== undefined) headers['Content-Type'] = 'application/json';
+
+  return send<T>(`${path}${search ? `?${search}` : ''}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+}
+
+/**
+ * Envoie une image locale (URI renvoyée par useImagePicker) dans le champ multipart "file",
+ * par exemple vers /uploads (selfie) ou /me/media (médiathèque). L'API n'accepte que JPEG et PNG.
+ */
+export async function apiUpload<T>(path: string, fileUri: string): Promise<T> {
+  const name = fileUri.split('/').pop() || 'image.jpg';
+  const form = new FormData();
+  // Forme propre à React Native : le fichier est décrit par son URI, pas par un Blob.
+  form.append('file', { uri: fileUri, name, type: name.endsWith('.png') ? 'image/png' : 'image/jpeg' } as unknown as Blob);
+
+  // Pas de Content-Type : fetch le pose lui-même avec la frontière multipart.
+  return send<T>(path, { method: 'POST', headers: {}, body: form });
+}
+
+async function send<T>(pathWithQuery: string, init: { method: string; headers: Record<string, string>; body?: BodyInit }): Promise<T> {
+  const headers = { ...init.headers };
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}${search ? `?${search}` : ''}`, {
-      method,
-      headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
+    response = await fetch(`${API_URL}${pathWithQuery}`, { ...init, headers });
   } catch {
     throw new ApiError(0, NETWORK_ERROR, 'API injoignable');
   }
