@@ -20,8 +20,8 @@ export function forbidden(message = 'Accès refusé'): HttpError {
   return new HttpError(403, 'FORBIDDEN', message);
 }
 
-export function notFound(message = 'Ressource introuvable'): HttpError {
-  return new HttpError(404, 'NOT_FOUND', message);
+export function notFound(message = 'Ressource introuvable', code = 'NOT_FOUND'): HttpError {
+  return new HttpError(404, code, message);
 }
 
 export function conflict(code: string, message: string, extra?: Record<string, unknown>): HttpError {

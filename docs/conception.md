@@ -266,8 +266,15 @@ mobile/src/
 ## 7. Contrat d'API (à figer lundi soir)
 
 Base : `http://<IP>:3000`. Doc Swagger sur `/docs`.
-- Les erreurs ont toutes la forme `{ "error": { "code": "...", "message": "..." } }`.
+- Les erreurs ont toutes la forme `{ "error": { "code": "...", "message": "..." } }`. Les détails éventuels sont rangés **dans** `error` : `error.usedIn`, `error.errors`, `error.warnings`, `error.field`...
 - `401` : pas de token. `403` : mauvais rôle, ou histoire d'un autre auteur. `404` : ressource introuvable. `422` : validation.
+- Un élément de `usedIn` a la forme `{ kind, id, storyId, label }`, où `label` est le nom ou le titre à afficher. Pour une image, `kind` vaut `story`, `scene`, `enemy` ou `item`.
+- Codes d'erreur du jeu :
+  - `404 NO_SAVE` : pas de partie sur cette histoire ;
+  - `422 GAME_OVER` : partie terminée ou héros mort ;
+  - `422 IN_COMBAT` : choix impossible pendant un combat ;
+  - `422 INVALID_CHOICE` : le choix ne part pas de la scène courante ;
+  - `422 CHOICE_LOCKED` : la condition du choix n'est pas remplie.
 
 ```
 # Auth (B)
@@ -277,8 +284,9 @@ GET    /auth/me                                                      → user
 PATCH  /auth/me               { displayName?, avatarUrl? }           → user
 
 # Bibliothèque (B), réservée aux PLAYER
-GET    /stories?q=&genre=     histoires publiées → [{ id, title, summary, genre, coverUrl, author, avgRating, isFavorite }]
-GET    /stories/:id           détail publié + définitions de stats + état de ma partie
+GET    /stories?q=&genre=     histoires publiées → [{ id, title, summary, genre, coverUrl, hasCombat, author, avgRating, isFavorite }]
+GET    /stories/genres        genres distincts des histoires publiées, triés → ["Fantasy", ...]
+GET    /stories/:id           détail publié + définitions de stats + état de ma partie (mySave: { status, updatedAt } | null)
 PUT    /stories/:id/favorite  (bonus)
 DELETE /stories/:id/favorite  (bonus)
 GET    /me/favorites          (bonus)
@@ -321,7 +329,7 @@ POST   /uploads               multipart, champ "file" → { url }
 
 # Jeu (B), réservé aux PLAYER
 GET    /me/saves                             mes parties → [{ story, status, updatedAt }]
-POST   /play/:storyId/start   { textStats?: { statId: "valeur" }, heroFaceUrl? } → GameState   (users.avatar_url par défaut)
+POST   /play/:storyId/start   { textStats?: { statId: "valeur" }, heroFaceUrl? } → GameState   (users.avatar_url par défaut ; 50 caractères max par texte ; recommence une partie existante)
 GET    /play/:storyId                        → GameState
 POST   /play/:storyId/choose  { choiceId }   → GameState
 POST   /play/:storyId/combat  { action: "attack" } → GameState
@@ -337,7 +345,8 @@ type GameState = {
   status: 'IN_PROGRESS' | 'FINISHED' | 'DEAD';
   scene: { id: string; title: string; text: string; backgroundUrl: string | null; isEnding: boolean };
   choices: { id: string; label: string; locked: boolean; conditionLabel: string | null }[]; // vide pendant un combat
-  stats: { id: string; name: string; type: 'number' | 'text'; value: number | string }[];
+  stats: { id: string; name: string; type: 'number' | 'text'; value: number | string; min: number | null; max: number | null }[];
+  hpStatId: string | null;                           // stat de PV de l'histoire, pour la jauge « PV 12 / 20 »
   heroFaceUrl: string | null;
   inventory: { id: string; name: string; imageUrl: string | null; description: string | null; qty: number; usable: boolean }[];
   changes: { label: string; kind: 'stat' | 'item'; delta: number }[];  // effets appliqués par la dernière action

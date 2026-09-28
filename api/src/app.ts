@@ -8,8 +8,10 @@ import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fas
 import { env } from './config/env.js';
 import { MAX_UPLOAD_BYTES } from './lib/uploads.js';
 import authRoutes from './modules/auth/routes.js';
+import catalogRoutes from './modules/catalog/routes.js';
 import creatorMediaRoutes from './modules/creator/media/routes.js';
 import creatorStoriesRoutes from './modules/creator/stories/routes.js';
+import playRoutes from './modules/play/routes.js';
 import uploadsRoutes from './modules/uploads/routes.js';
 import authPlugin from './plugins/auth.js';
 import errorsPlugin from './plugins/errors.js';
@@ -38,6 +40,8 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<App> {
   await app.register(uploadsRoutes);
   await app.register(creatorStoriesRoutes);
   await app.register(creatorMediaRoutes);
+  await app.register(catalogRoutes);
+  await app.register(playRoutes);
 
   app.get('/health', async () => ({ status: 'ok' as const }));
 
