@@ -51,6 +51,13 @@ export default function Register() {
       <Screen scroll edges={['top', 'bottom']} contentStyle={styles.content}>
         <AuthHeader compact />
 
+        <View style={styles.intro}>
+          <Text accessibilityRole="header" style={[styles.heading, { color: colors.text }]}>
+            {fr.auth.registerHeading}
+          </Text>
+          <Text style={[typography.body, { color: colors.textMuted }]}>{fr.auth.registerSubtitle}</Text>
+        </View>
+
         <RoleToggle value={role} onChange={setRole} />
 
         <View style={styles.fields}>
@@ -76,18 +83,22 @@ export default function Register() {
             textContentType="emailAddress"
             returnKeyType="next"
           />
-          <Input
-            label={fr.auth.password}
-            placeholder={fr.auth.passwordPlaceholder}
-            value={password}
-            onChangeText={setPassword}
-            error={fieldErrors.password}
-            secureTextEntry
-            autoComplete="new-password"
-            textContentType="newPassword"
-            returnKeyType="go"
-            onSubmitEditing={submit}
-          />
+          <View style={styles.passwordField}>
+            <Input
+              label={fr.auth.password}
+              value={password}
+              onChangeText={setPassword}
+              error={fieldErrors.password}
+              secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="go"
+              onSubmitEditing={submit}
+            />
+            {!fieldErrors.password ? (
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{fr.auth.passwordHint}</Text>
+            ) : null}
+          </View>
           {formError ? (
             <Text accessibilityLiveRegion="polite" style={[styles.formError, { color: colors.danger }]}>
               {formError}
@@ -96,7 +107,7 @@ export default function Register() {
         </View>
 
         <View style={styles.actions}>
-          <Button label={fr.auth.register} onPress={submit} loading={submitting} />
+          <Button label={fr.auth.registerCta[role]} onPress={submit} loading={submitting} />
           <Link href="/" dismissTo asChild>
             <Pressable accessibilityRole="link" style={styles.switchRow}>
               <Text style={[typography.body, styles.switch, { color: colors.textMuted }]}>
@@ -114,7 +125,10 @@ export default function Register() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { flexGrow: 1, gap: 24 },
+  intro: { gap: 6 },
+  heading: { fontFamily: fonts.display, fontSize: 38, lineHeight: 40 },
   fields: { gap: 16 },
+  passwordField: { gap: 6 },
   formError: { fontFamily: fonts.bodySemiBold, fontSize: 14 },
   actions: { marginTop: 'auto', gap: 16 },
   switchRow: { minHeight: 44, justifyContent: 'center' },
