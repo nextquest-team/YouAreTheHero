@@ -75,6 +75,20 @@ describe('plugin auth et routes /auth', () => {
     expect(response.json().error.code).toBe('EMAIL_TAKEN');
   });
 
+  it('deux inscriptions concurrentes sur le même email : une seule réussit, l’autre répond 409 EMAIL_TAKEN (jamais 500)', async () => {
+    const payload = { email: 'course@demo.fr', password: 'password123', displayName: 'Course', role: 'PLAYER' };
+
+    const [first, second] = await Promise.all([
+      app.inject({ method: 'POST', url: '/auth/register', payload }),
+      app.inject({ method: 'POST', url: '/auth/register', payload }),
+    ]);
+
+    expect([first.statusCode, second.statusCode].sort()).toEqual([201, 409]);
+
+    const loser = first.statusCode === 409 ? first : second;
+    expect(loser.json().error.code).toBe('EMAIL_TAKEN');
+  });
+
   it('un mauvais mot de passe répond 401 INVALID_CREDENTIALS', async () => {
     await app.inject({
       method: 'POST',
@@ -167,6 +181,27 @@ describe('plugin auth et routes /auth', () => {
     const body = response.json();
     expect(body.displayName).toBe('Nouveau nom');
     expect(body.avatarUrl).toBe('/uploads/avatar.jpg');
+  });
+
+  it('PATCH /auth/me { avatarUrl: null } efface un avatar déjà posé', async () => {
+    const { token } = await createUser(app, { role: 'PLAYER' });
+
+    await app.inject({
+      method: 'PATCH',
+      url: '/auth/me',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { avatarUrl: '/uploads/avatar.jpg' },
+    });
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/auth/me',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { avatarUrl: null },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().avatarUrl).toBeNull();
   });
 
   it('requireRole(CREATOR) appelé par un PLAYER répond 403 FORBIDDEN', async () => {

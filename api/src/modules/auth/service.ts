@@ -27,6 +27,20 @@ async function findById(id: string): Promise<typeof users.$inferSelect | null> {
   return user ?? null;
 }
 
+/**
+ * Violation de contrainte unique Postgres (23505). Drizzle enveloppe l'erreur pg dans
+ * `DrizzleQueryError` (`.cause` porte l'erreur d'origine) : on regarde les deux niveaux
+ * pour rester robuste si un jour l'erreur n'est plus enveloppée.
+ */
+function isUniqueViolation(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const code = (error as { code?: unknown }).code;
+  const causeCode = (error.cause as { code?: unknown } | undefined)?.code;
+  return code === '23505' || causeCode === '23505';
+}
+
 /** Utilisé par le plugin d'auth : vérifie que le `sub` du token existe encore en base. */
 export async function userExists(id: string): Promise<boolean> {
   return (await findById(id)) !== null;
@@ -52,12 +66,22 @@ export async function register(input: {
 
   const passwordHash = await hash(input.password, { type: argon2id });
 
-  const [created] = await db
-    .insert(users)
-    .values({ email, passwordHash, displayName: input.displayName, role: input.role })
-    .returning();
+  // Le pré-check ci-dessus ne protège pas d'une course : deux inscriptions concurrentes
+  // sur le même email peuvent toutes deux le passer avant que l'une des deux insère.
+  // La contrainte unique de la base tranche alors ; on convertit sa violation en 409.
+  try {
+    const [created] = await db
+      .insert(users)
+      .values({ email, passwordHash, displayName: input.displayName, role: input.role })
+      .returning();
 
-  return toPublic(created);
+    return toPublic(created);
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      throw conflict('EMAIL_TAKEN', 'Cet email est déjà utilisé');
+    }
+    throw error;
+  }
 }
 
 export async function login(input: { email: string; password: string }): Promise<UserPublic> {
