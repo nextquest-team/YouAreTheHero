@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { uploadPathSchema } from '../../lib/schemas.js';
 
 export const roleSchema = z.enum(['PLAYER', 'CREATOR']);
 export type Role = z.infer<typeof roleSchema>;
@@ -33,5 +34,5 @@ export const loginBodySchema = z.object({
 
 export const patchMeBodySchema = z.object({
   displayName: z.string().min(1).max(50).optional(),
-  avatarUrl: z.string().startsWith('/uploads/').nullable().optional(),
+  avatarUrl: uploadPathSchema.nullable().optional(),
 });

@@ -167,6 +167,19 @@ describe('plugin auth et routes /auth', () => {
     expect(response.statusCode).toBe(422);
   });
 
+  it('PATCH /auth/me avec un avatarUrl contenant .. répond 422', async () => {
+    const { token } = await createUser(app, { role: 'PLAYER' });
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/auth/me',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { avatarUrl: '/uploads/../secret' },
+    });
+
+    expect(response.statusCode).toBe(422);
+  });
+
   it('PATCH /auth/me met à jour displayName et avatarUrl', async () => {
     const { token } = await createUser(app, { role: 'PLAYER' });
 

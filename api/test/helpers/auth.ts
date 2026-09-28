@@ -20,5 +20,9 @@ export async function createUser(
     },
   });
 
+  if (response.statusCode !== 201) {
+    throw new Error(`createUser: /auth/register a répondu ${response.statusCode} : ${response.body}`);
+  }
+
   return response.json() as { token: string; user: UserPublic };
 }

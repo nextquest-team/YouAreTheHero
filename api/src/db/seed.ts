@@ -8,25 +8,11 @@ import type { Condition, Effect } from '../engine/schemas.js';
 import { db, closeDb } from './index.js';
 import { choices, enemies, items, scenes, statDefinitions, stories, users } from './schema/index.js';
 import { cryptStory, demoUsers, lighthouseStory, type SeedCondition, type SeedEffect, type SeedStory } from './seed-data.js';
+import { ALL_TABLES } from './tables.js';
 
 // Type de `tx` tel que fourni par db.transaction(async (tx) => ...) : distinct de `typeof db`
 // (il manque $client), donc dérivé directement de la signature plutôt que redéclaré à la main.
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-// Même liste que test/helpers/db.ts : tout vider avant de réinsérer rend le seed idempotent
-// (relancer db:seed ne laisse jamais de doublon).
-const TABLES = [
-  'saves',
-  'favorites',
-  'reviews',
-  'choices',
-  'scenes',
-  'items',
-  'enemies',
-  'stat_definitions',
-  'stories',
-  'users',
-] as const;
 
 // Résolu depuis ce fichier, comme migrate.ts : fonctionne en dev (src/db/seed.ts, seed-assets/ un
 // niveau au-dessus) comme compilé dans l'image Docker (dist/db/seed.js, seed-assets/ copié à côté de dist/).
@@ -195,7 +181,7 @@ async function seedStory(tx: Tx, authorId: string, story: SeedStory): Promise<vo
  */
 export async function runSeed(): Promise<void> {
   await db.transaction(async (tx) => {
-    await tx.execute(sql.raw(`TRUNCATE TABLE ${TABLES.join(', ')} CASCADE`));
+    await tx.execute(sql.raw(`TRUNCATE TABLE ${ALL_TABLES.join(', ')} CASCADE`));
 
     const userIds = new Map<string, string>();
     for (const demoUser of demoUsers) {
@@ -218,6 +204,7 @@ export async function runSeed(): Promise<void> {
 async function main(): Promise<void> {
   await runSeed();
   await closeDb();
+  console.log('Seed terminé');
 }
 
 // N'exécute le seed que si ce fichier est le point d'entrée du process (tsx en dev, node en

@@ -44,7 +44,7 @@ Scanner le QR code avec l'appareil photo (iOS) ou avec Expo Go (Android).
 ## API
 
 ```bash
-docker compose up -d db
+docker compose up -d --wait db
 cp api/.env.example api/.env
 cd api && npm install && npm run db:migrate && npm run db:seed && npm run dev
 ```
@@ -58,7 +58,7 @@ docker compose exec api node dist/db/seed.js
 
 La documentation Swagger de l'API est servie sur `/docs` (`http://localhost:3000/docs`).
 
-`npm run db:seed` (idempotent) crée deux comptes de démonstration, mot de passe `demo1234` :
+`npm run db:seed` vide entièrement la base (comptes compris) puis réinsère les données de démo : deux comptes, mot de passe `demo1234` :
 
 - `auteur@demo.fr` (créateur) : autrice d'une histoire publiée et jouable, « La Crypte du Roi Oublié », et d'un brouillon, « Le Phare des Brumes ».
 - `joueur@demo.fr` (joueur) : pour parcourir l'histoire publiée.
@@ -67,7 +67,10 @@ La documentation Swagger de l'API est servie sur `/docs` (`http://localhost:3000
 
 ```bash
 cd mobile && npx expo lint && npx tsc --noEmit
+cd api && npm run typecheck && npm test
 ```
+
+Les tests de l'API utilisent la base `hero_test`, créée automatiquement au premier démarrage du volume Postgres. Si elle manque, la créer avec `docker compose exec db createdb -U hero hero_test`.
 
 La CI relance ces commandes sur chaque PR. Une PR dont les checks sont rouges ne peut pas être fusionnée.
 

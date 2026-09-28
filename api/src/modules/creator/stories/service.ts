@@ -1,8 +1,8 @@
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { asc, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../../db/index.js';
 import { choices, enemies, items, scenes, statDefinitions, stories } from '../../../db/schema/index.js';
 import { unprocessable } from '../../../lib/errors.js';
-import type { Story } from '../ownership.js';
+import { assertInStory, type Story } from '../ownership.js';
 import type { CreateStoryBody, StoryDto, StoryFullDto, UpdateStoryBody } from './schemas.js';
 
 function toDto(story: Story): StoryDto {
@@ -130,15 +130,7 @@ export async function getFull(story: Story): Promise<StoryFullDto> {
  */
 async function validateReferences(storyId: string, input: UpdateStoryBody): Promise<void> {
   if (input.startSceneId !== undefined && input.startSceneId !== null) {
-    const [scene] = await db
-      .select({ id: scenes.id })
-      .from(scenes)
-      .where(and(eq(scenes.id, input.startSceneId), eq(scenes.storyId, storyId)));
-    if (!scene) {
-      throw unprocessable('INVALID_REFERENCE', "La scène de départ n'appartient pas à cette histoire", {
-        field: 'startSceneId',
-      });
-    }
+    await assertInStory(scenes, input.startSceneId, storyId, 'startSceneId');
   }
 
   for (const field of ['attackStatId', 'hpStatId'] as const) {
@@ -146,11 +138,8 @@ async function validateReferences(storyId: string, input: UpdateStoryBody): Prom
     if (statId === undefined || statId === null) {
       continue;
     }
-    const [stat] = await db
-      .select({ type: statDefinitions.type })
-      .from(statDefinitions)
-      .where(and(eq(statDefinitions.id, statId), eq(statDefinitions.storyId, storyId)));
-    if (!stat || stat.type !== 'number') {
+    const stat = await assertInStory(statDefinitions, statId, storyId, field);
+    if (stat.type !== 'number') {
       throw unprocessable('INVALID_REFERENCE', 'La stat référencée doit être une stat numérique de cette histoire', {
         field,
       });

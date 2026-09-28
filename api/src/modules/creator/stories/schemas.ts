@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { conditionSchema, effectSchema } from '../../../engine/schemas.js';
+import { uploadPathSchema } from '../../../lib/schemas.js';
 
 export const idParamSchema = z.object({ id: z.uuid() });
 
@@ -83,7 +84,7 @@ export const createStoryBodySchema = z.object({
   title: z.string().min(1).max(120),
   summary: z.string().default(''),
   genre: z.string().min(1).max(40),
-  coverUrl: z.string().startsWith('/uploads/').optional(),
+  coverUrl: uploadPathSchema.optional(),
 });
 export type CreateStoryBody = z.infer<typeof createStoryBodySchema>;
 
@@ -91,7 +92,7 @@ export const updateStoryBodySchema = z.object({
   title: z.string().min(1).max(120).optional(),
   summary: z.string().optional(),
   genre: z.string().min(1).max(40).optional(),
-  coverUrl: z.string().startsWith('/uploads/').nullable().optional(),
+  coverUrl: uploadPathSchema.nullable().optional(),
   startSceneId: z.uuid().nullable().optional(),
   attackStatId: z.uuid().nullable().optional(),
   hpStatId: z.uuid().nullable().optional(),

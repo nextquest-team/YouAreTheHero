@@ -1,4 +1,5 @@
-import type { FastifyError, FastifyInstance, FastifyReply } from 'fastify';
+import { DrizzleQueryError } from 'drizzle-orm';
+import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod';
 import { HttpError, notFound } from '../lib/errors.js';
@@ -22,6 +23,27 @@ function isFastifyClientError(error: unknown): error is FastifyError {
     (error as FastifyError).statusCode! >= 400 &&
     (error as FastifyError).statusCode! < 500
   );
+}
+
+/**
+ * Journalise une erreur 500 sans exposer de données sensibles : une DrizzleQueryError embarque
+ * la requête SQL et ses paramètres (potentiellement un email ou un hash) dans son message, donc
+ * on ne garde que le code Postgres de sa cause. La stack n'est journalisée qu'hors production.
+ */
+function logServerError(request: FastifyRequest, error: unknown): void {
+  if (!(error instanceof Error)) {
+    request.log.error({ value: String(error) });
+    return;
+  }
+  if (error instanceof DrizzleQueryError) {
+    const cause = error.cause as { code?: string } | undefined;
+    request.log.error({ name: error.name, code: cause?.code });
+  } else {
+    request.log.error({ name: error.name, message: error.message });
+  }
+  if (process.env.NODE_ENV !== 'production' && error.stack) {
+    request.log.error(error.stack);
+  }
 }
 
 /**
@@ -58,7 +80,7 @@ export default fp(async function errorsPlugin(app: FastifyInstance) {
       return;
     }
 
-    request.log.error(error);
+    logServerError(request, error);
     sendError(reply, 500, 'INTERNAL_ERROR', 'Une erreur interne est survenue');
   });
 });
