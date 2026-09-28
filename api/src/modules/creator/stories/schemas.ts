@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { conditionSchema, effectSchema, extraStatSchema } from '../../../engine/schemas.js';
 import { uploadPathSchema } from '../../../lib/schemas.js';
+import { statSchema } from '../stats/schemas.js';
 
 export const idParamSchema = z.object({ id: z.uuid() });
 
@@ -22,16 +23,7 @@ export const storySchema = z.object({
 export type StoryDto = z.infer<typeof storySchema>;
 
 // Formes minimales des entités enfants, juste de quoi assembler l'histoire complète :
-// A les remplacera par les schémas dédiés de ses modules stats/enemies/items/scenes/choices.
-const statDefinitionSchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  type: z.enum(['number', 'text']),
-  defaultValue: z.string(),
-  min: z.number().nullable(),
-  max: z.number().nullable(),
-  sortOrder: z.number(),
-});
+// A les remplacera par les schémas dédiés de ses modules enemies/items/scenes/choices.
 
 const enemySchema = z.object({
   id: z.uuid(),
@@ -78,7 +70,7 @@ const sceneSchema = z.object({
 });
 
 export const storyFullSchema = storySchema.extend({
-  stats: z.array(statDefinitionSchema),
+  stats: z.array(statSchema),
   enemies: z.array(enemySchema),
   items: z.array(itemSchema),
   scenes: z.array(sceneSchema),

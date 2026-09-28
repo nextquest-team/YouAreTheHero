@@ -7,6 +7,7 @@ import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fas
 import { env } from './config/env.js';
 import authRoutes from './modules/auth/routes.js';
 import catalogRoutes from './modules/catalog/routes.js';
+import creatorStatsRoutes from './modules/creator/stats/routes.js';
 import creatorStoriesRoutes from './modules/creator/stories/routes.js';
 import playRoutes from './modules/play/routes.js';
 import authPlugin from './plugins/auth.js';
@@ -33,6 +34,7 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<App> {
   await app.register(authPlugin);
   await app.register(authRoutes, { prefix: '/auth' });
   await app.register(creatorStoriesRoutes);
+  await app.register(creatorStatsRoutes);
   await app.register(catalogRoutes);
   await app.register(playRoutes);
 

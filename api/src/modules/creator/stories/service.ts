@@ -3,6 +3,7 @@ import { db } from '../../../db/index.js';
 import { choices, enemies, items, scenes, statDefinitions, stories } from '../../../db/schema/index.js';
 import { unprocessable } from '../../../lib/errors.js';
 import { assertInStory, type Story } from '../ownership.js';
+import { toDto as statToDto } from '../stats/service.js';
 import type { CreateStoryBody, StoryDto, StoryFullDto, UpdateStoryBody } from './schemas.js';
 
 function toDto(story: Story): StoryDto {
@@ -78,15 +79,7 @@ export async function getFull(story: Story): Promise<StoryFullDto> {
 
   return {
     ...toDto(story),
-    stats: statRows.map((stat) => ({
-      id: stat.id,
-      name: stat.name,
-      type: stat.type,
-      defaultValue: stat.defaultValue,
-      min: stat.min,
-      max: stat.max,
-      sortOrder: stat.sortOrder,
-    })),
+    stats: statRows.map(statToDto),
     enemies: enemyRows.map((enemy) => ({
       id: enemy.id,
       name: enemy.name,
