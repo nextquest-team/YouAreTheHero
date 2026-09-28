@@ -64,4 +64,17 @@ describe('squelette Fastify', () => {
     expect(response.statusCode).toBe(422);
     expect(response.json().error.code).toBe('VALIDATION_ERROR');
   });
+
+  it('un JSON malformé répond 400 avec le code natif Fastify, pas 500', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/test/validate',
+      headers: { 'content-type': 'application/json' },
+      payload: '{"n":',
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBeDefined();
+    expect(response.json().error.message).toBeDefined();
+  });
 });
