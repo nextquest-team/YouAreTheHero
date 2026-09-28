@@ -1,7 +1,16 @@
 import { z } from 'zod';
 import type { App } from '../../app.js';
 import * as playService from './service.js';
-import { chooseBodySchema, gameStateSchema, saveSummarySchema, startBodySchema, storyIdParamSchema } from './schemas.js';
+import {
+  chooseBodySchema,
+  combatBodySchema,
+  gameStateSchema,
+  saveSummarySchema,
+  startBodySchema,
+  storyIdParamSchema,
+  updateHeroBodySchema,
+  useBodySchema,
+} from './schemas.js';
 
 // Moteur de jeu, réservé aux PLAYER (voir docs/conception.md sections 4 et 7).
 export default async function routes(app: App) {
@@ -58,6 +67,48 @@ export default async function routes(app: App) {
     },
     preHandler,
     handler: async (request) => playService.choose(request.user.sub, request.params.storyId, request.body),
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/play/:storyId/combat',
+    schema: {
+      tags: ['play'],
+      security: [{ bearerAuth: [] }],
+      params: storyIdParamSchema,
+      body: combatBodySchema,
+      response: { 200: gameStateSchema },
+    },
+    preHandler,
+    handler: async (request) => playService.combat(request.user.sub, request.params.storyId, app.roll),
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/play/:storyId/use',
+    schema: {
+      tags: ['play'],
+      security: [{ bearerAuth: [] }],
+      params: storyIdParamSchema,
+      body: useBodySchema,
+      response: { 200: gameStateSchema },
+    },
+    preHandler,
+    handler: async (request) => playService.use(request.user.sub, request.params.storyId, request.body),
+  });
+
+  app.route({
+    method: 'PATCH',
+    url: '/play/:storyId/hero',
+    schema: {
+      tags: ['play'],
+      security: [{ bearerAuth: [] }],
+      params: storyIdParamSchema,
+      body: updateHeroBodySchema,
+      response: { 200: gameStateSchema },
+    },
+    preHandler,
+    handler: async (request) => playService.updateHeroFace(request.user.sub, request.params.storyId, request.body),
   });
 
   app.route({

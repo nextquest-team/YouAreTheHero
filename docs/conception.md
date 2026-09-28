@@ -274,7 +274,11 @@ Base : `http://<IP>:3000`. Doc Swagger sur `/docs`.
   - `422 GAME_OVER` : partie terminée ou héros mort ;
   - `422 IN_COMBAT` : choix impossible pendant un combat ;
   - `422 INVALID_CHOICE` : le choix ne part pas de la scène courante ;
-  - `422 CHOICE_LOCKED` : la condition du choix n'est pas remplie.
+  - `422 CHOICE_LOCKED` : la condition du choix n'est pas remplie ;
+  - `422 NOT_IN_COMBAT` : attaque sans combat en cours ;
+  - `422 ITEM_NOT_OWNED` : l'objet n'est pas dans l'inventaire ;
+  - `422 ITEM_NOT_USABLE` : l'objet n'a pas d'effet d'utilisation.
+- Le dé du combat est injectable (`buildApp({ roll })`) : les tests fixent les jets pour des combats reproductibles.
 
 ```
 # Auth (B)
