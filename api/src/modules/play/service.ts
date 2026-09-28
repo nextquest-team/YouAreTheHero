@@ -33,16 +33,20 @@ interface StoryContext {
 }
 
 async function loadStoryContext(executor: DbOrTx, storyId: string, hpStatId: string | null): Promise<StoryContext> {
-  const [statRows, itemRows, sceneRows, enemyRows] = await Promise.all([
-    executor
-      .select()
-      .from(statDefinitions)
-      .where(eq(statDefinitions.storyId, storyId))
-      .orderBy(asc(statDefinitions.sortOrder), asc(statDefinitions.id)),
-    executor.select().from(items).where(eq(items.storyId, storyId)).orderBy(asc(items.sortOrder), asc(items.id)),
-    executor.select().from(scenes).where(eq(scenes.storyId, storyId)),
-    executor.select().from(enemies).where(eq(enemies.storyId, storyId)),
-  ]);
+  // Requêtes l'une après l'autre : dans une transaction, elles partagent une seule connexion
+  // et pg refuse (à partir de la v9) les requêtes simultanées sur un même client.
+  const statRows = await executor
+    .select()
+    .from(statDefinitions)
+    .where(eq(statDefinitions.storyId, storyId))
+    .orderBy(asc(statDefinitions.sortOrder), asc(statDefinitions.id));
+  const itemRows = await executor
+    .select()
+    .from(items)
+    .where(eq(items.storyId, storyId))
+    .orderBy(asc(items.sortOrder), asc(items.id));
+  const sceneRows = await executor.select().from(scenes).where(eq(scenes.storyId, storyId));
+  const enemyRows = await executor.select().from(enemies).where(eq(enemies.storyId, storyId));
 
   const sceneIds = sceneRows.map((scene) => scene.id);
   const choiceRows =
