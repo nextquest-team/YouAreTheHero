@@ -93,7 +93,6 @@ export const fr = {
   storyDetail: {
     by: 'par',
     combat: 'Avec combats',
-    narrative: 'Narrative',
     rating: 'Note moyenne',
     noRating: 'Pas encore d’avis',
     heroStats: 'Ton héros au départ',
@@ -115,7 +114,13 @@ export const fr = {
       FINISHED: 'Terminée',
       DEAD: 'Héros tombé',
     },
-    updated: 'Dernière partie le',
+    adventureSingular: 'aventure',
+    adventurePlural: 'aventures',
+    inProgressPrefix: 'dont',
+    inProgressSuffix: 'en cours',
+    playedToday: 'Joué aujourd’hui',
+    playedOn: 'Le',
+    oneGamePerStory: 'Une seule partie par histoire : recommencer efface la précédente.',
   },
   game: {
     quit: 'Quitter la partie',
