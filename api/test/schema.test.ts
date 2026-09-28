@@ -1,8 +1,19 @@
+import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { db } from '../src/db/index.js';
-import { choices, enemies, favorites, items, saves, scenes, statDefinitions, stories } from '../src/db/schema/index.js';
-import { users } from '../src/db/schema/users.js';
+import {
+  choices,
+  enemies,
+  favorites,
+  items,
+  reviews,
+  saves,
+  scenes,
+  statDefinitions,
+  stories,
+  users,
+} from '../src/db/schema/index.js';
 import { resetDb } from './helpers/db.js';
 
 /** Crée un utilisateur et retourne son id. */
@@ -10,7 +21,7 @@ async function createUser(role: 'PLAYER' | 'CREATOR' = 'CREATOR') {
   const [user] = await db
     .insert(users)
     .values({
-      email: `${role.toLowerCase()}-${crypto.randomUUID()}@demo.fr`,
+      email: `${role.toLowerCase()}-${randomUUID()}@demo.fr`,
       passwordHash: 'hash',
       displayName: 'Demo',
       role,
@@ -163,9 +174,7 @@ describe('schéma Drizzle : suppressions en cascade / SET NULL', () => {
     const story = await createStory(author.id);
 
     await expect(
-      db.execute(
-        `insert into reviews (user_id, story_id, rating) values ('${player.id}', '${story.id}', 6)`,
-      ),
+      db.insert(reviews).values({ userId: player.id, storyId: story.id, rating: 6 }),
     ).rejects.toThrow();
   });
 
