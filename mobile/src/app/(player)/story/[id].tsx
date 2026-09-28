@@ -13,7 +13,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { errorMessage } from '@/i18n/errorMessage';
 import { fr } from '@/i18n/fr';
 import { assetUrl } from '@/services/client';
-import { startGame } from '@/services/play';
+import { rememberStartedGame, startGame } from '@/services/play';
 import { fonts, radius, spacing, touchTarget, typography } from '@/theme';
 
 const COVER_HEIGHT = 236;
@@ -42,7 +42,7 @@ export default function StoryDetailScreen() {
     setStartError(null);
     try {
       const values = Object.fromEntries(Object.entries(textStats).filter(([, value]) => value.trim() !== ''));
-      await startGame(id, { textStats: values });
+      rememberStartedGame(await startGame(id, { textStats: values }));
       openGame();
     } catch (error) {
       setStartError(errorMessage(error));

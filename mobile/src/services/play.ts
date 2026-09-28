@@ -10,6 +10,23 @@ export function startGame(storyId: string, input: StartGameInput = {}): Promise<
   return apiFetch<GameState>(`/play/${storyId}/start`, { method: 'POST', body: input });
 }
 
+// L'état renvoyé par start porte les changements de la scène de départ (un objet ramassé à
+// l'entrée, par exemple), que GET /play ne renvoie pas. La fiche le dépose ici et l'écran de
+// jeu le reprend au lieu de recharger la partie.
+const startedGames = new Map<string, GameState>();
+
+export function rememberStartedGame(state: GameState) {
+  startedGames.set(state.storyId, state);
+}
+
+export function peekStartedGame(storyId: string): GameState | null {
+  return startedGames.get(storyId) ?? null;
+}
+
+export function forgetStartedGame(storyId: string) {
+  startedGames.delete(storyId);
+}
+
 export function getGame(storyId: string): Promise<GameState> {
   return apiFetch<GameState>(`/play/${storyId}`);
 }

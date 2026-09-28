@@ -9,13 +9,19 @@ import type { GameState } from '@/types/api';
  * état complet, qu'on affiche tel quel.
  */
 export function useGame(storyId: string) {
-  const [game, setGame] = useState<GameState | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Partie tout juste lancée depuis la fiche : on l'affiche telle quelle, avec ses changements.
+  const [started] = useState(() => playApi.peekStartedGame(storyId));
+  const [game, setGame] = useState<GameState | null>(started);
+  const [loading, setLoading] = useState(started === null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
+    if (version === 0 && started) {
+      playApi.forgetStartedGame(storyId);
+      return;
+    }
     let active = true;
     playApi.getGame(storyId).then(
       (state) => {
@@ -32,7 +38,7 @@ export function useGame(storyId: string) {
     return () => {
       active = false;
     };
-  }, [storyId, version]);
+  }, [storyId, version, started]);
 
   const reload = useCallback(() => {
     setLoading(true);
