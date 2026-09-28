@@ -1,18 +1,40 @@
 import { Image } from 'expo-image';
-import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { LoadState } from '@/components/common/LoadState';
 import { ImagePickerField } from '@/components/editor/ImagePickerField';
 import { Screen } from '@/components/ui';
+import { useMedia } from '@/hooks/useMedia';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
+import { assetUrl } from '@/services/client';
+import type { Media as MediaItem, Usage } from '@/types/api';
 import { radius, spacing, typography } from '@/theme';
 
-// Médiathèque du créateur. Les images restent locales en attendant l'API :
-// elles passeront par useMedia (POST /me/media) quand le back sera prêt.
+/** « Couverture : La Crypte du Roi Oublié », une ligne par endroit qui utilise l'image. */
+function usageLines(usedIn: Usage[]): string {
+  return usedIn.map((usage) => `• ${fr.media.usageKinds[usage.kind]} : ${usage.label}`).join('\n');
+}
+
+// Médiathèque du créateur : les images envoyées ici servent ensuite de couverture,
+// de décor, d'ennemi ou d'objet dans l'éditeur.
 export default function Media() {
   const { colors } = useTheme();
-  const [images, setImages] = useState<string[]>([]);
+  const { data, loading, error, reload, busy, actionError, upload, remove } = useMedia();
+
+  const handleDelete = async (media: MediaItem) => {
+    const result = await remove(media.id);
+    if (!result.ok && result.usedIn.length > 0) {
+      Alert.alert(fr.media.inUseTitle, `${fr.media.inUseIntro}\n\n${usageLines(result.usedIn)}`);
+    }
+  };
+
+  const confirmDelete = (media: MediaItem) => {
+    Alert.alert(fr.media.deleteTitle, fr.media.deleteMessage, [
+      { text: fr.common.cancel, style: 'cancel' },
+      { text: fr.common.delete, style: 'destructive', onPress: () => handleDelete(media) },
+    ]);
+  };
 
   return (
     <Screen scroll>
@@ -24,25 +46,42 @@ export default function Media() {
         <Text style={[typography.caption, { color: colors.textMuted }]}>{fr.media.intro}</Text>
       </View>
 
-      <ImagePickerField
-        label={fr.media.newImage}
-        value={null}
-        onChange={(uri) => setImages((list) => [uri, ...list])}
-        height={140}
-      />
+      <ImagePickerField label={fr.media.newImage} value={null} onChange={upload} height={140} />
 
-      {images.length === 0 ? (
+      {busy ? (
+        <View style={styles.status} accessibilityLiveRegion="polite">
+          <ActivityIndicator color={colors.accent} />
+          <Text style={[typography.caption, { color: colors.textMuted }]}>{fr.media.working}</Text>
+        </View>
+      ) : null}
+      {actionError ? (
+        <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+          {actionError}
+        </Text>
+      ) : null}
+
+      {data === null ? (
+        <LoadState loading={loading} error={error} onRetry={reload} />
+      ) : data.length === 0 ? (
         <Text style={[typography.body, { color: colors.textMuted }]}>{fr.media.empty}</Text>
       ) : (
         <View style={styles.grid}>
-          {images.map((uri) => (
-            <Image
-              key={uri}
-              source={{ uri }}
-              style={[styles.thumb, { backgroundColor: colors.surfaceAlt }]}
-              contentFit="cover"
+          {data.map((media) => (
+            <Pressable
+              key={media.id}
+              onPress={() => confirmDelete(media)}
+              disabled={busy}
+              accessibilityRole="button"
               accessibilityLabel={fr.media.imageLabel}
-            />
+              accessibilityHint={fr.media.deleteHint}
+              style={({ pressed }) => [styles.thumb, { opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Image
+                source={{ uri: assetUrl(media.url) ?? undefined }}
+                style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceAlt }]}
+                contentFit="cover"
+              />
+            </Pressable>
           ))}
         </View>
       )}
@@ -52,6 +91,7 @@ export default function Media() {
 
 const styles = StyleSheet.create({
   header: { gap: 2 },
+  status: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  thumb: { width: '31.5%', aspectRatio: 1, borderRadius: radius.md },
+  thumb: { width: '31.5%', aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' },
 });

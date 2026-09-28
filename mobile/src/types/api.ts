@@ -97,3 +97,13 @@ export type GameState = {
     log: string[];
   };
 };
+
+export type Media = { id: string; url: string; createdAt: string };
+
+// Détail d'un 409 (IMAGE_IN_USE, STAT_IN_USE...) : les endroits qui utilisent encore la ressource.
+export type Usage = {
+  kind: 'story' | 'scene' | 'enemy' | 'item' | 'choice';
+  id: string;
+  storyId: string;
+  label: string;
+};

@@ -5,11 +5,12 @@ import { Button } from '@/components/ui';
 import { ImageSource, useImagePicker } from '@/hooks/useImagePicker';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
+import { assetUrl } from '@/services/client';
 import { fonts, radius, spacing } from '@/theme';
 
 type Props = {
   label: string; // ex. « Décor de la scène »
-  value: string | null; // URI de l'image affichée
+  value: string | null; // URI locale ou chemin renvoyé par l'API ("/uploads/abc.jpg")
   onChange: (uri: string) => void;
   height?: number;
 };
@@ -35,7 +36,7 @@ export function ImagePickerField({ label, value, onChange, height = 180 }: Props
       >
         {value ? (
           <Image
-            source={{ uri: value }}
+            source={{ uri: value.startsWith('/uploads/') ? (assetUrl(value) ?? undefined) : value }}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
             accessibilityLabel={label}
