@@ -13,6 +13,8 @@ Application mobile de « livres dont vous êtes le héros ».
 | API | Node 22, Fastify 5, Drizzle ORM, Zod, JWT |
 | Base de données | PostgreSQL 16 (Docker) |
 
+Le dépôt est un monorepo à deux projets : `mobile/` (l'application Expo) et `api/` (l'API Fastify), chacun avec son propre `package.json`.
+
 Le périmètre, le modèle de données, les règles du jeu et le contrat d'API sont décrits dans [docs/conception.md](docs/conception.md).
 
 ## Prérequis
@@ -26,16 +28,15 @@ Le périmètre, le modèle de données, les règles du jeu et le contrat d'API s
 ```bash
 git clone https://github.com/nextquest-team/YouAreTheHero.git
 cd YouAreTheHero
-npm install
-cp .env.example .env
+cd mobile && npm install && cp .env.example .env
 ```
 
-Dans `.env`, `EXPO_PUBLIC_API_URL` doit pointer vers l'adresse IP du Mac qui fait tourner l'API. Le téléphone doit être sur le même réseau Wi-Fi.
+Dans `mobile/.env`, `EXPO_PUBLIC_API_URL` doit pointer vers l'adresse IP du Mac qui fait tourner l'API. Le téléphone doit être sur le même réseau Wi-Fi.
 
 ## Lancer l'application
 
 ```bash
-npx expo start
+cd mobile && npx expo start
 ```
 
 Scanner le QR code avec l'appareil photo (iOS) ou avec Expo Go (Android).
@@ -43,17 +44,17 @@ Scanner le QR code avec l'appareil photo (iOS) ou avec Expo Go (Android).
 ## Vérifications avant une PR
 
 ```bash
-npx expo lint
-npx tsc --noEmit
+cd mobile && npx expo lint && npx tsc --noEmit
 ```
 
 La CI relance ces commandes sur chaque PR. Une PR dont les checks sont rouges ne peut pas être fusionnée.
 
 ## Organisation du dépôt
 
-- `src/app/` : les écrans (routage par fichiers d'Expo Router)
-- `src/services/`, `src/hooks/`, `src/components/` : appels à l'API, logique et composants. Aucun `fetch` dans un composant.
-- `src/i18n/fr.ts` : tous les textes de l'interface
+- `mobile/` : l'application Expo
+  - `mobile/src/app/` : les écrans (routage par fichiers d'Expo Router)
+  - `mobile/src/services/`, `mobile/src/hooks/`, `mobile/src/components/` : appels à l'API, logique et composants. Aucun `fetch` dans un composant.
+  - `mobile/src/i18n/fr.ts` : tous les textes de l'interface
 - `api/` : l'API Fastify
 - `.github/workflows/` : la CI (`mobile`, `api`) et la publication de l'image de l'API
 

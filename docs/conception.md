@@ -42,7 +42,7 @@ Le projet dispose de trois jours et demi avant le rendu ; tout ce qui n'est pas 
 
 | Couche | Choix |
 |---|---|
-| Front | Expo SDK 57, Expo Router (routes dans `src/app/`), TypeScript strict |
+| Front | Expo SDK 57, Expo Router (routes dans `mobile/src/app/`), TypeScript strict |
 | Modules Expo | `expo-camera`, `expo-image-picker`, `expo-image-manipulator`, `expo-secure-store` (token), `@react-native-async-storage/async-storage` (thème) |
 | Back | Node 22, Fastify 5, TypeScript, Drizzle ORM, Zod (via `fastify-type-provider-zod`), `@fastify/swagger` |
 | Base | PostgreSQL 16 dans Docker |
@@ -53,7 +53,9 @@ Le choix de Fastify et Drizzle s'appuie sur une stack déjà utilisée par B sur
 
 > Front : on installe avec `npx expo install <package>`, jamais avec `npm install`.
 > Démo : l'API tourne en Docker sur un Mac et le téléphone passe par le Wi-Fi.
-> Mettre `EXPO_PUBLIC_API_URL=http://<IP-du-Mac>:3000` dans `.env`, qui est gitignoré (un `.env.example` est commité).
+> Mettre `EXPO_PUBLIC_API_URL=http://<IP-du-Mac>:3000` dans `mobile/.env`, qui est gitignoré (un `.env.example` est commité).
+
+Le dépôt est un monorepo à deux projets indépendants, `mobile/` (l'app Expo) et `api/` (l'API Fastify), chacun avec son propre `package.json` et son propre `package-lock.json`, sans workspaces npm.
 
 ---
 
@@ -99,7 +101,7 @@ Les ennemis utilisent des colonnes `attack` et `hp` dédiées plutôt qu'un cham
   - `unpublish` **supprime explicitement** les saves de l'histoire. La cascade ne joue qu'à la suppression de l'histoire, pas à la dépublication.
 
 **Images** : le back ne stocke et ne renvoie que des **chemins relatifs** (`/uploads/abc.jpg`).
-- Le front construit l'URL complète à un seul endroit, avec `assetUrl()` dans `src/services/client.ts` à partir de `EXPO_PUBLIC_API_URL`.
+- Le front construit l'URL complète à un seul endroit, avec `assetUrl()` dans `mobile/src/services/client.ts` à partir de `EXPO_PUBLIC_API_URL`.
 - Changer d'IP le jour J ne casse donc aucune image.
 
 ---
@@ -197,7 +199,7 @@ Chacun fait le **back et le front** de ses fonctionnalités. B pose le socle bac
 ### Code partagé : qui l'écrit, qui l'utilise
 - **B** écrit :
   - le plugin d'auth back (`app.authenticate`, `app.requireRole('CREATOR')`),
-  - le client API front (`src/services/client.ts`, qui ajoute le token et gère les erreurs),
+  - le client API front (`mobile/src/services/client.ts`, qui ajoute le token et gère les erreurs),
   - le `AuthProvider`,
   - le seed.
   - A utilise tout ça.
@@ -212,7 +214,7 @@ Chacun fait le **back et le front** de ses fonctionnalités. B pose le socle bac
 ## 6. Navigation (Expo Router)
 
 ```
-src/app/
+mobile/src/app/
 ├── _layout.tsx                 # AuthProvider + ThemeProvider, redirection selon le rôle (Stack.Protected)
 ├── (auth)/login.tsx            # B
 ├── (auth)/register.tsx         # B (choix du rôle)
@@ -238,10 +240,10 @@ src/app/
 
 Règles du cours à respecter :
 - **aucun `fetch` dans un composant** : on passe par services, puis hooks, puis composants ;
-- **aucun texte codé en dur** : les libellés vont dans `src/i18n/fr.ts`, avec une clé par écran.
+- **aucun texte codé en dur** : les libellés vont dans `mobile/src/i18n/fr.ts`, avec une clé par écran.
 
 ```
-src/
+mobile/src/
 ├── services/   client.ts (B), auth.ts, stories.ts, play.ts (B) | creator.ts, uploads.ts (A)
 ├── hooks/      useAuth, useStories, useGame (B) | useMyStories, useSceneEditor, useTheme (A)
 ├── components/ ui/ (A) | game/ (B) | editor/ (A)
@@ -389,7 +391,7 @@ docker-compose.yml             # à la racine : postgres + api
   - Une PR vers `develop`, relue par l'autre, et on merge au moins une fois par jour.
   - Chacun commite avec son propre compte.
 - **Avant chaque PR**
-  - Front : `npx expo lint` et `npx tsc --noEmit`.
+  - Front : `npx expo lint` et `npx tsc --noEmit`, dans `mobile/`.
   - Back : `npm run typecheck` et `npm test` dans `api/`.
   - La CI relance tout ça de toute façon : une PR rouge ne se merge pas.
 - **Tests croisés** : A joue les histoires, B en crée.
@@ -402,7 +404,7 @@ docker-compose.yml             # à la racine : postgres + api
   - A clone le repo :
     ```bash
     git clone https://github.com/nextquest-team/YouAreTheHero.git
-    cd YouAreTheHero && npm install
+    cd YouAreTheHero/mobile && npm install
     ```
   - Ensuite, tout passe par une PR vers `develop`.
 
@@ -419,7 +421,7 @@ Juste ce qu'il faut pour 3 jours et demi, pas plus.
 - Les règles s'appliquent **aussi aux admins**. Sans ça, les deux administrateurs pourraient les contourner.
 - `develop` est la branche par défaut, donc les PR la ciblent automatiquement. Le jeudi, une PR fusionne `develop` dans `main`.
 
-**`.github/workflows/mobile.yml`**, sur chaque PR et chaque push vers `develop` ou `main`
+**`.github/workflows/mobile.yml`**, sur chaque PR et chaque push vers `develop` ou `main`, lancé dans `mobile/`
 - `actions/setup-node` en Node 22, avec le cache npm.
 - `npm ci`, `npx expo lint`, `npx tsc --noEmit`.
 
