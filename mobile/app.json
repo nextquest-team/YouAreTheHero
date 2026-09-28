@@ -26,6 +26,13 @@
     "plugins": [
       "expo-router",
       [
+        "expo-image-picker",
+        {
+          "cameraPermission": "You Are The Hero utilise l'appareil photo pour illustrer les histoires et prendre le selfie du héros.",
+          "photosPermission": "You Are The Hero accède à ta galerie pour illustrer les histoires."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",

@@ -1,12 +1,13 @@
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { choices, enemies, items, saves, scenes, statDefinitions, stories, users } from '../../db/schema/index.js';
+import { resolveCombatTurn } from '../../engine/combat.js';
 import { conditionLabel, evaluateCondition } from '../../engine/conditions.js';
 import { applyEffects, isDead } from '../../engine/effects.js';
 import type { CombatState, SaveStats } from '../../engine/schemas.js';
 import type { Change, ItemDef, PlayState, StatDef } from '../../engine/types.js';
 import { notFound, unprocessable } from '../../lib/errors.js';
-import type { ChooseBody, GameStateDto, SaveSummaryDto, StartBody } from './schemas.js';
+import type { ChooseBody, GameStateDto, SaveSummaryDto, StartBody, UpdateHeroBody, UseBody } from './schemas.js';
 
 // Type de `tx` tel que fourni par db.transaction(async (tx) => ...) (voir src/db/seed.ts).
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -305,6 +306,210 @@ export async function choose(userId: string, storyId: string, body: ChooseBody):
 
     return buildGameState(ctx, updated, changes);
   });
+}
+
+/**
+ * Règle « en combat, le héros garde 1 PV plutôt que de tomber à 0 » (docs/conception.md point 6),
+ * appliquée après une application d'effets générique (qui, elle, ne connaît que le min/max de la
+ * stat). Ne fait rien si les PV ne sont pas tombés à 0 ou moins.
+ */
+function keepAtOnePv(state: PlayState, hpStatId: string, hpStatName: string): { state: PlayState; changes: Change[] } {
+  const current = typeof state.stats[hpStatId] === 'number' ? (state.stats[hpStatId] as number) : 0;
+  if (current > 0) {
+    return { state, changes: [] };
+  }
+  const nextState: PlayState = { ...state, stats: { ...state.stats, [hpStatId]: 1 } };
+  const changes: Change[] = current === 1 ? [] : [{ label: `${hpStatName} ${current} → 1`, kind: 'stat', delta: 1 - current }];
+  return { state: nextState, changes };
+}
+
+export async function combat(userId: string, storyId: string, roll: () => number): Promise<GameStateDto> {
+  return db.transaction(async (tx) => {
+    const [save] = await tx
+      .select()
+      .from(saves)
+      .where(and(eq(saves.userId, userId), eq(saves.storyId, storyId)))
+      .for('update');
+    if (!save) {
+      noSave();
+    }
+    if (save.status !== 'IN_PROGRESS') {
+      throw unprocessable('GAME_OVER', 'La partie est terminée');
+    }
+    if (!save.combat) {
+      throw unprocessable('NOT_IN_COMBAT', 'Aucun combat en cours');
+    }
+
+    const [story] = await tx
+      .select({ hpStatId: stories.hpStatId, attackStatId: stories.attackStatId })
+      .from(stories)
+      .where(eq(stories.id, storyId));
+    const ctx = await loadStoryContext(tx, storyId, story?.hpStatId ?? null);
+
+    const scene = ctx.scenesById.get(save.currentSceneId)!;
+    const enemy = ctx.enemiesById.get(save.combat.enemyId)!;
+    const heroAttackStat =
+      story?.attackStatId && typeof save.stats[story.attackStatId] === 'number' ? (save.stats[story.attackStatId] as number) : 0;
+
+    const turn = resolveCombatTurn({
+      heroAttackStat,
+      enemyName: enemy.name,
+      enemyAttack: enemy.attack,
+      enemyHp: save.combat.enemyHp,
+      enemyShield: save.combat.enemyShield,
+      roll,
+    });
+
+    let state: PlayState = { stats: save.stats, inventory: save.inventory, history: save.history };
+    let changes: Change[] = [];
+
+    if (turn.heroDamage > 0 && ctx.hpStatId) {
+      const hit = applyEffects([{ type: 'stat', statId: ctx.hpStatId, delta: -turn.heroDamage }], state, ctx.stats, ctx.items);
+      state = hit.state;
+      changes = hit.changes;
+    }
+
+    let combatState: CombatState | null = {
+      enemyId: enemy.id,
+      enemyHp: turn.enemyHp,
+      enemyShield: turn.enemyShield,
+      log: [...save.combat.log, turn.log],
+    };
+    let status: SaveStatus = 'IN_PROGRESS';
+    let currentSceneId = save.currentSceneId;
+
+    if (turn.enemyHp <= 0) {
+      // Victoire : butin puis départ vers la scène de victoire (docs/conception.md point 6).
+      const looted = applyEffects(enemy.defeatEffects, state, ctx.stats, ctx.items);
+      state = looted.state;
+      changes = [...changes, ...looted.changes];
+
+      const arrival = arriveOnScene(scene.winSceneId!, state, ctx);
+      state = arrival.state;
+      status = arrival.status;
+      combatState = arrival.combat;
+      changes = [...changes, ...arrival.changes];
+      currentSceneId = scene.winSceneId!;
+    } else if (ctx.hpStatId && isDead(state, ctx.hpStatId)) {
+      if (scene.loseSceneId) {
+        const hpStat = ctx.stats.find((s) => s.id === ctx.hpStatId);
+        if (hpStat) {
+          const patched = keepAtOnePv(state, ctx.hpStatId, hpStat.name);
+          state = patched.state;
+          changes = [...changes, ...patched.changes];
+        }
+        const arrival = arriveOnScene(scene.loseSceneId, state, ctx);
+        state = arrival.state;
+        status = arrival.status;
+        combatState = arrival.combat;
+        changes = [...changes, ...arrival.changes];
+        currentSceneId = scene.loseSceneId;
+      } else {
+        status = 'DEAD';
+        combatState = null;
+      }
+    }
+
+    const [updated] = await tx
+      .update(saves)
+      .set({ currentSceneId, stats: state.stats, inventory: state.inventory, history: state.history, combat: combatState, status })
+      .where(eq(saves.id, save.id))
+      .returning();
+
+    return buildGameState(ctx, updated, changes);
+  });
+}
+
+export async function use(userId: string, storyId: string, body: UseBody): Promise<GameStateDto> {
+  return db.transaction(async (tx) => {
+    const [save] = await tx
+      .select()
+      .from(saves)
+      .where(and(eq(saves.userId, userId), eq(saves.storyId, storyId)))
+      .for('update');
+    if (!save) {
+      noSave();
+    }
+    if (save.status !== 'IN_PROGRESS') {
+      throw unprocessable('GAME_OVER', 'La partie est terminée');
+    }
+    if ((save.inventory[body.itemId] ?? 0) <= 0) {
+      throw unprocessable('ITEM_NOT_OWNED', "Cet objet n'est pas dans l'inventaire");
+    }
+
+    const [story] = await tx.select({ hpStatId: stories.hpStatId }).from(stories).where(eq(stories.id, storyId));
+    const ctx = await loadStoryContext(tx, storyId, story?.hpStatId ?? null);
+
+    const itemRow = ctx.itemRows.find((i) => i.id === body.itemId);
+    if (!itemRow || !itemRow.useEffects || itemRow.useEffects.length === 0) {
+      throw unprocessable('ITEM_NOT_USABLE', 'Cet objet ne peut pas être utilisé');
+    }
+
+    let state: PlayState = { stats: save.stats, inventory: save.inventory, history: save.history };
+
+    const used = applyEffects(itemRow.useEffects, state, ctx.stats, ctx.items);
+    state = used.state;
+    let changes = used.changes;
+
+    // Retire 1 exemplaire de l'objet consommé (docs/conception.md point 3 bis) ; à 0 il disparaît.
+    const consumed = applyEffects([{ type: 'item', itemId: body.itemId, qty: -1 }], state, ctx.stats, ctx.items);
+    state = consumed.state;
+    changes = [...changes, ...consumed.changes];
+
+    let status: SaveStatus = save.status;
+    let combatState = save.combat;
+    let currentSceneId = save.currentSceneId;
+
+    if (ctx.hpStatId && isDead(state, ctx.hpStatId)) {
+      if (save.combat) {
+        // En combat : même issue que la règle de combat (docs/conception.md point 6).
+        const scene = ctx.scenesById.get(save.currentSceneId)!;
+        if (scene.loseSceneId) {
+          const hpStat = ctx.stats.find((s) => s.id === ctx.hpStatId);
+          if (hpStat) {
+            const patched = keepAtOnePv(state, ctx.hpStatId, hpStat.name);
+            state = patched.state;
+            changes = [...changes, ...patched.changes];
+          }
+          const arrival = arriveOnScene(scene.loseSceneId, state, ctx);
+          state = arrival.state;
+          status = arrival.status;
+          combatState = arrival.combat;
+          changes = [...changes, ...arrival.changes];
+          currentSceneId = scene.loseSceneId;
+        } else {
+          status = 'DEAD';
+          combatState = null;
+        }
+      } else {
+        // Hors combat : mort directe (docs/conception.md point 4).
+        status = 'DEAD';
+      }
+    }
+
+    const [updated] = await tx
+      .update(saves)
+      .set({ currentSceneId, stats: state.stats, inventory: state.inventory, history: state.history, combat: combatState, status })
+      .where(eq(saves.id, save.id))
+      .returning();
+
+    return buildGameState(ctx, updated, changes);
+  });
+}
+
+export async function updateHeroFace(userId: string, storyId: string, body: UpdateHeroBody): Promise<GameStateDto> {
+  const [save] = await db
+    .update(saves)
+    .set({ heroFaceUrl: body.heroFaceUrl })
+    .where(and(eq(saves.userId, userId), eq(saves.storyId, storyId)))
+    .returning();
+  if (!save) {
+    noSave();
+  }
+
+  const [story] = await db.select({ hpStatId: stories.hpStatId }).from(stories).where(eq(stories.id, storyId));
+  const ctx = await loadStoryContext(db, storyId, story?.hpStatId ?? null);
+  return buildGameState(ctx, save, []);
 }
 
 export async function abandon(userId: string, storyId: string): Promise<void> {

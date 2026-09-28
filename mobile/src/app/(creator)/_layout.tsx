@@ -26,6 +26,13 @@ export default function CreatorLayout() {
         }}
       />
       <Tabs.Screen
+        name="media"
+        options={{
+          title: fr.creatorTabs.media,
+          tabBarIcon: ({ color, size }) => <Feather name="image" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: fr.creatorTabs.profile,

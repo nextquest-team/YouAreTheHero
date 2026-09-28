@@ -9,7 +9,25 @@ export const fr = {
   },
   creatorTabs: {
     stories: 'Mes histoires',
+    media: 'Médiathèque',
     profile: 'Profil',
+  },
+  imagePicker: {
+    camera: 'Photo',
+    cameraHint: "Ouvre l'appareil photo",
+    library: 'Galerie',
+    libraryHint: 'Ouvre la galerie de ton téléphone',
+    cameraDenied:
+      "L'accès à l'appareil photo est refusé. Autorise-le dans les réglages du téléphone.",
+    failed: "L'image n'a pas pu être chargée. Réessaie.",
+  },
+  media: {
+    overline: 'Espace créateur',
+    title: 'Médiathèque',
+    intro: 'Les images qui illustrent tes histoires : couvertures, décors, ennemis et objets.',
+    newImage: 'Nouvelle image',
+    empty: 'Aucune image pour le moment.',
+    imageLabel: 'Image de la médiathèque',
   },
   creatorStories: {
     overline: 'Espace créateur',
