@@ -9,11 +9,12 @@ import { LoadState } from '@/components/common/LoadState';
 import { ChangesStrip } from '@/components/game/ChangesStrip';
 import { ChoiceList } from '@/components/game/ChoiceList';
 import { CombatPanel } from '@/components/game/CombatPanel';
+import { EndScreen } from '@/components/game/EndScreen';
 import { gameColors } from '@/components/game/gameColors';
 import { HeroBar } from '@/components/game/HeroBar';
 import { InventorySheet } from '@/components/game/InventorySheet';
-import { Button } from '@/components/ui';
 import { useGame } from '@/hooks/useGame';
+import { useStory } from '@/hooks/useStories';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
 import { assetUrl } from '@/services/client';
@@ -26,11 +27,30 @@ export default function PlayScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { game, loading, busy, error, reload, choose, attack, consumeItem, restart } = useGame(storyId);
+  const storyMeta = useStory(storyId);
   const [inventoryOpen, setInventoryOpen] = useState(false);
 
   const backdrop = assetUrl(game?.scene.backgroundUrl);
   const over = game ? game.status !== 'IN_PROGRESS' : false;
   const itemCount = game?.inventory.reduce((sum, item) => sum + item.qty, 0) ?? 0;
+
+  // Partie terminée : écran dédié plein écran, sans décor ni inventaire à gérer.
+  if (game && over) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <ScrollView contentContainerStyle={[styles.endContent, { paddingTop: insets.top, paddingBottom: insets.bottom + spacing.xxl }]}>
+          <EndScreen
+            game={game}
+            storyTitle={storyMeta.data?.title ?? ''}
+            restarting={busy}
+            error={error}
+            onRestart={restart}
+            onBackToLibrary={() => router.dismissTo('/')}
+          />
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -99,18 +119,7 @@ export default function PlayScreen() {
                   </Text>
                 ) : null}
 
-                {over ? (
-                  <View style={[styles.end, { backgroundColor: colors.surface, borderColor: game.status === 'DEAD' ? colors.dangerBorder : colors.border }]}>
-                    <Text accessibilityRole="header" style={[typography.heading, { color: game.status === 'DEAD' ? colors.danger : colors.accent }]}>
-                      {game.status === 'DEAD' ? fr.game.deadTitle : fr.game.finishedTitle}
-                    </Text>
-                    <Text style={[typography.body, { color: colors.textSoft }]}>
-                      {game.status === 'DEAD' ? fr.game.deadText : fr.game.finishedText}
-                    </Text>
-                    <Button label={fr.game.restart} icon="rotate-ccw" onPress={restart} loading={busy} />
-                    <Button label={fr.game.backToLibrary} variant="ghost" onPress={() => router.dismissTo('/')} />
-                  </View>
-                ) : game.combat ? (
+                {game.combat ? (
                   <CombatPanel combat={game.combat} busy={busy} onAttack={attack} />
                 ) : (
                   <ChoiceList choices={game.choices} disabled={busy} onChoose={choose} />
@@ -137,6 +146,7 @@ export default function PlayScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  endContent: { flexGrow: 1 },
   backdrop: { height: BACKDROP_HEIGHT, overflow: 'hidden' },
   topBar: {
     position: 'absolute',
@@ -181,5 +191,4 @@ const styles = StyleSheet.create({
   parchment: { padding: 18, borderRadius: radius.xl, gap: 6 },
   sceneTitle: { ...typography.overline },
   sceneText: { fontFamily: fonts.display, fontSize: 21, lineHeight: 28 },
-  end: { gap: spacing.md, padding: spacing.lg, borderRadius: radius.xl, borderWidth: 1 },
 });
