@@ -79,7 +79,10 @@ export default function Saves() {
                   accessibilityLabel={`${save.story.title}, ${status}, ${when}`}
                   style={({ pressed }) => [styles.row, { borderTopColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
                 >
-                  <View style={[styles.ribbon, { backgroundColor: statusColor[save.status] }]} />
+                  {/* Marque-page : l'encoche en V est un carré tourné, de la couleur du fond. */}
+                  <View style={[styles.ribbon, { backgroundColor: statusColor[save.status] }]}>
+                    <View style={[styles.ribbonNotch, { backgroundColor: colors.background }]} />
+                  </View>
                   <StoryCover uri={save.story.coverUrl} width={56} height={68} />
                   <View style={styles.body}>
                     <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
@@ -119,7 +122,8 @@ const styles = StyleSheet.create({
     paddingRight: spacing.sm,
     borderTopWidth: 1,
   },
-  ribbon: { position: 'absolute', left: 0, top: 10, bottom: 10, width: 4, borderRadius: 2 },
+  ribbon: { position: 'absolute', left: 4, top: -1, width: 12, height: 48, overflow: 'hidden' },
+  ribbonNotch: { position: 'absolute', left: 1, bottom: -5, width: 10, height: 10, transform: [{ rotate: '45deg' }] },
   body: { flex: 1, gap: 2 },
   title: { fontFamily: fonts.display, fontSize: 23, lineHeight: 26 },
   status: { fontFamily: fonts.bodyBold, fontSize: 14 },
