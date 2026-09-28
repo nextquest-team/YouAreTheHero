@@ -46,3 +46,8 @@ export function consumeItem(storyId: string, itemId: string): Promise<GameState>
 export function abandonGame(storyId: string): Promise<void> {
   return apiFetch<void>(`/play/${storyId}`, { method: 'DELETE' });
 }
+
+// Photo du héros propre à cette histoire (distincte de l'avatar du profil, PATCH /auth/me).
+export function updateHeroFace(storyId: string, heroFaceUrl: string): Promise<GameState> {
+  return apiFetch<GameState>(`/play/${storyId}/hero`, { method: 'PATCH', body: { heroFaceUrl } });
+}
