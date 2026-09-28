@@ -1,6 +1,6 @@
 import Feather from '@expo/vector-icons/Feather';
 import { ComponentProps } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, ViewStyle } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
 import { fonts, radius, spacing, touchTarget } from '@/theme';
@@ -15,7 +15,7 @@ type Props = {
   disabled?: boolean;
   loading?: boolean;
   accessibilityHint?: string;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 export function Button({
