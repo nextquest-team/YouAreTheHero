@@ -41,6 +41,28 @@ cd mobile && npx expo start
 
 Scanner le QR code avec l'appareil photo (iOS) ou avec Expo Go (Android).
 
+## API
+
+```bash
+docker compose up -d db
+cp api/.env.example api/.env
+cd api && npm install && npm run db:migrate && npm run db:seed && npm run dev
+```
+
+Ou entièrement en Docker :
+
+```bash
+docker compose up --build
+docker compose exec api node dist/db/seed.js
+```
+
+La documentation Swagger de l'API est servie sur `/docs` (`http://localhost:3000/docs`).
+
+`npm run db:seed` (idempotent) crée deux comptes de démonstration, mot de passe `demo1234` :
+
+- `auteur@demo.fr` (créateur) : autrice d'une histoire publiée et jouable, « La Crypte du Roi Oublié », et d'un brouillon, « Le Phare des Brumes ».
+- `joueur@demo.fr` (joueur) : pour parcourir l'histoire publiée.
+
 ## Vérifications avant une PR
 
 ```bash
