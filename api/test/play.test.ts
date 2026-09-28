@@ -110,7 +110,7 @@ describe('module jeu (/play, /me/saves)', () => {
     const lockedChoice = await getChoice(couloir.id, 'Forcer le passage écroulé à mains nues');
     const body = afterSword.json();
     const lockedDto = body.choices.find((c: { id: string }) => c.id === lockedChoice.id);
-    expect(lockedDto).toMatchObject({ locked: true, conditionLabel: 'Force 7 requise' });
+    expect(lockedDto).toMatchObject({ locked: true, conditionLabel: 'Force ≥ 7' });
 
     const lockedAttempt = await choose(lockedChoice.id);
     expect(lockedAttempt.statusCode).toBe(422);

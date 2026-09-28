@@ -25,20 +25,20 @@ export function evaluateCondition(condition: Condition, state: PlayState): boole
   return condition.op === 'has' ? qty >= 1 : qty <= 0;
 }
 
-/** Libellé affiché au joueur pour un choix verrouillé : renvoyé tel quel au front. */
+/** Libellé de la condition d'un choix (« Force ≥ 7 », « Avec Clé rouillée »), renvoyé tel quel au front. */
 export function conditionLabel(condition: Condition, stats: StatDef[], items: ItemDef[]): string {
   if (condition.type === 'stat') {
     const name = stats.find((stat) => stat.id === condition.statId)?.name ?? '';
     switch (condition.op) {
       case '>=':
-        return `${name} ${condition.value} requise`;
+        return `${name} ≥ ${condition.value}`;
       case '<=':
-        return `${name} ${condition.value} maximum`;
+        return `${name} ≤ ${condition.value}`;
       case '==':
-        return `${name} exactement ${condition.value}`;
+        return `${name} = ${condition.value}`;
     }
   }
 
   const name = items.find((item) => item.id === condition.itemId)?.name ?? '';
-  return condition.op === 'has' ? `${name} requise` : `Sans ${name}`;
+  return condition.op === 'has' ? `Avec ${name}` : `Sans ${name}`;
 }

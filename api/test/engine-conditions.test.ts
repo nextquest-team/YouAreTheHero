@@ -50,20 +50,20 @@ describe('evaluateCondition', () => {
 });
 
 describe('conditionLabel', () => {
-  it('stat >= : "Force 7 requise"', () => {
-    expect(conditionLabel({ type: 'stat', statId: forceId, op: '>=', value: 7 }, stats, items)).toBe('Force 7 requise');
+  it('stat >= : "Force ≥ 7"', () => {
+    expect(conditionLabel({ type: 'stat', statId: forceId, op: '>=', value: 7 }, stats, items)).toBe('Force ≥ 7');
   });
 
-  it('stat <= : "Force 3 maximum"', () => {
-    expect(conditionLabel({ type: 'stat', statId: forceId, op: '<=', value: 3 }, stats, items)).toBe('Force 3 maximum');
+  it('stat <= : "Force ≤ 3"', () => {
+    expect(conditionLabel({ type: 'stat', statId: forceId, op: '<=', value: 3 }, stats, items)).toBe('Force ≤ 3');
   });
 
-  it('stat == : "Force exactement 5"', () => {
-    expect(conditionLabel({ type: 'stat', statId: forceId, op: '==', value: 5 }, stats, items)).toBe('Force exactement 5');
+  it('stat == : "Force = 5"', () => {
+    expect(conditionLabel({ type: 'stat', statId: forceId, op: '==', value: 5 }, stats, items)).toBe('Force = 5');
   });
 
-  it('item has : "Clé rouillée requise"', () => {
-    expect(conditionLabel({ type: 'item', itemId: cleId, op: 'has' }, stats, items)).toBe('Clé rouillée requise');
+  it('item has : "Avec Clé rouillée"', () => {
+    expect(conditionLabel({ type: 'item', itemId: cleId, op: 'has' }, stats, items)).toBe('Avec Clé rouillée');
   });
 
   it('item not_has : "Sans Clé rouillée"', () => {
