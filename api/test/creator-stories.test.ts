@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp, type App } from '../src/app.js';
 import { db } from '../src/db/index.js';
-import { choices, scenes, statDefinitions, stories } from '../src/db/schema/index.js';
+import { choices, enemies, scenes, statDefinitions, stories } from '../src/db/schema/index.js';
 import { createUser } from './helpers/auth.js';
 import { resetDb } from './helpers/db.js';
 
@@ -160,6 +160,23 @@ describe('module /me/stories', () => {
     expect(body.items).toEqual([]);
   });
 
+  it('GET /me/stories/:id trie les ennemis par nom puis id (pas de sortOrder pour eux)', async () => {
+    const { token } = await createUser(app, { role: 'CREATOR' });
+    const story = await createStory(token);
+
+    await db.insert(enemies).values({ storyId: story.id, name: 'Zombie', attack: 3, hp: 8 });
+    await db.insert(enemies).values({ storyId: story.id, name: 'Araignée', attack: 1, hp: 4 });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/me/stories/${story.id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().enemies.map((e: { name: string }) => e.name)).toEqual(['Araignée', 'Zombie']);
+  });
+
   it('PATCH /me/stories/:id modifie les champs fournis', async () => {
     const { token } = await createUser(app, { role: 'CREATOR' });
     const story = await createStory(token);
@@ -219,6 +236,42 @@ describe('module /me/stories', () => {
     expect(response.statusCode).toBe(422);
     expect(response.json().error.code).toBe('INVALID_REFERENCE');
     expect(response.json().error.field).toBe('attackStatId');
+  });
+
+  it('PATCH /me/stories/:id avec une stat de type text en hpStatId répond 422 INVALID_REFERENCE', async () => {
+    const { token } = await createUser(app, { role: 'CREATOR' });
+    const story = await createStory(token);
+
+    const [textStat] = await db
+      .insert(statDefinitions)
+      .values({ storyId: story.id, name: 'Nom du héros', type: 'text', defaultValue: 'Anonyme' })
+      .returning();
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/me/stories/${story.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { hpStatId: textStat.id },
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(response.json().error.code).toBe('INVALID_REFERENCE');
+    expect(response.json().error.field).toBe('hpStatId');
+  });
+
+  it('PATCH /me/stories/:id accepte coverUrl: null pour retirer la couverture', async () => {
+    const { token } = await createUser(app, { role: 'CREATOR' });
+    const story = await createStory(token, { coverUrl: '/uploads/cover.jpg' });
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/me/stories/${story.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { coverUrl: null },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().coverUrl).toBeNull();
   });
 
   it('PATCH /me/stories/:id accepte null pour désaffecter une référence', async () => {
@@ -297,5 +350,14 @@ describe('module /me/stories', () => {
 
     expect(response.statusCode).toBe(409);
     expect(response.json().error.code).toBe('STORY_PUBLISHED');
+  });
+
+  it('GET /docs/json expose les routes /me/stories et /me/stories/{id}', async () => {
+    const response = await app.inject({ method: 'GET', url: '/docs/json' });
+
+    expect(response.statusCode).toBe(200);
+    const paths = Object.keys(response.json().paths);
+    expect(paths).toContain('/me/stories');
+    expect(paths).toContain('/me/stories/{id}');
   });
 });

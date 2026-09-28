@@ -52,8 +52,8 @@ export async function getFull(story: Story): Promise<StoryFullDto> {
       .from(statDefinitions)
       .where(eq(statDefinitions.storyId, story.id))
       .orderBy(asc(statDefinitions.sortOrder), asc(statDefinitions.id)),
-    // Pas de sortOrder sur les ennemis : tri par id pour un ordre stable.
-    db.select().from(enemies).where(eq(enemies.storyId, story.id)).orderBy(asc(enemies.id)),
+    // Pas de sortOrder sur les ennemis : tri par nom puis id (un tri par uuid seul serait arbitraire).
+    db.select().from(enemies).where(eq(enemies.storyId, story.id)).orderBy(asc(enemies.name), asc(enemies.id)),
     db.select().from(items).where(eq(items.storyId, story.id)).orderBy(asc(items.sortOrder), asc(items.id)),
     db.select().from(scenes).where(eq(scenes.storyId, story.id)).orderBy(asc(scenes.sortOrder), asc(scenes.id)),
   ]);
