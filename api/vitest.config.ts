@@ -8,6 +8,7 @@ export default defineConfig({
   test: {
     include: ['test/**/*.test.ts'],
     fileParallelism: false,
+    globalSetup: ['./test/global-setup.ts'],
     env: {
       DATABASE_URL,
       JWT_SECRET,

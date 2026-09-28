@@ -11,7 +11,9 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts"
   },
   "dependencies": {
     "@fastify/cors": "11.3.0",
@@ -29,6 +31,7 @@
   },
   "devDependencies": {
     "@types/node": "26.6.3",
+    "@types/pg": "8.23.1",
     "drizzle-kit": "0.31.11",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
