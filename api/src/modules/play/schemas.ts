@@ -13,6 +13,15 @@ export type StartBody = z.infer<typeof startBodySchema>;
 export const chooseBodySchema = z.object({ choiceId: z.uuid() });
 export type ChooseBody = z.infer<typeof chooseBodySchema>;
 
+export const combatBodySchema = z.object({ action: z.literal('attack') });
+export type CombatBody = z.infer<typeof combatBodySchema>;
+
+export const useBodySchema = z.object({ itemId: z.uuid() });
+export type UseBody = z.infer<typeof useBodySchema>;
+
+export const updateHeroBodySchema = z.object({ heroFaceUrl: uploadPathSchema.nullable() });
+export type UpdateHeroBody = z.infer<typeof updateHeroBodySchema>;
+
 const sceneDtoSchema = z.object({
   id: z.uuid(),
   title: z.string(),

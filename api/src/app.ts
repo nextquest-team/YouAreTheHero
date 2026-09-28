@@ -20,13 +20,26 @@ import swaggerPlugin from './plugins/swagger.js';
 // Type partagé par tous les modules de routes : export default async function routes(app: App) { ... }
 export type App = FastifyInstance<RawServerDefault, IncomingMessage, ServerResponse, FastifyBaseLogger, ZodTypeProvider>;
 
-export async function buildApp(opts: { logger?: boolean } = {}): Promise<App> {
+declare module 'fastify' {
+  interface FastifyInstance {
+    /** Un jet de dé à 6 faces (1 à 6), utilisé par le combat (voir engine/combat.ts). Remplaçable
+     * pour des tests reproductibles via `buildApp({ roll })`. */
+    roll: () => number;
+  }
+}
+
+function rollD6(): number {
+  return Math.floor(Math.random() * 6) + 1;
+}
+
+export async function buildApp(opts: { logger?: boolean; roll?: () => number } = {}): Promise<App> {
   const app = fastify({
     logger: opts.logger ?? true,
   }).withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+  app.decorate('roll', opts.roll ?? rollD6);
 
   await mkdir(env.UPLOADS_DIR, { recursive: true });
 
