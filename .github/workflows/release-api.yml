@@ -1,0 +1,71 @@
+name: release-api
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: ghcr.io/nextquest-team/youarethehero-api
+
+jobs:
+  release-api:
+    name: release-api
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Détecter la présence du Dockerfile de l'API
+        id: detect
+        run: |
+          if [ -f api/Dockerfile ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: API pas encore présente
+        if: steps.detect.outputs.exists == 'false'
+        run: echo "::notice::api/Dockerfile n'existe pas encore, rien à publier pour le moment."
+
+      - name: Setup Buildx
+        if: steps.detect.outputs.exists == 'true'
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login sur GHCR
+        if: steps.detect.outputs.exists == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extraire les métadonnées de l'image
+        if: steps.detect.outputs.exists == 'true'
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+
+      - name: Build et push de l'image Docker
+        if: steps.detect.outputs.exists == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: api
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

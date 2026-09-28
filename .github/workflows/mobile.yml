@@ -1,0 +1,45 @@
+name: mobile
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+      - main
+
+# Pas de filtre paths : le check "mobile" est requis par les rulesets,
+# il doit toujours se déclencher pour ne pas rester bloqué "en attente".
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile:
+    name: mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Vérifier la compatibilité des dépendances avec le SDK Expo
+        run: npx expo install --check
+
+      - name: Lint
+        run: npx expo lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit

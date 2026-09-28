@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # Pas d'entrée npm pour l'app : les versions sont fixées par le SDK Expo
+  # et se mettent à jour avec `npx expo install --fix`.
+  - package-ecosystem: npm
+    directory: "/api"
+    target-branch: develop
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    target-branch: develop
+    schedule:
+      interval: weekly
