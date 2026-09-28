@@ -4,6 +4,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { DropCapText } from '@/components/common/DropCapText';
 import { LoadState } from '@/components/common/LoadState';
 import { parchment } from '@/components/common/parchment';
 import { Button, Input, Screen } from '@/components/ui';
@@ -122,10 +123,7 @@ export default function StoryDetailScreen() {
 
             {data.summary ? (
               <View style={[styles.summaryBox, { backgroundColor: parchment.background, borderLeftColor: parchment.rule }]}>
-                <Text style={styles.summaryText}>
-                  <Text style={styles.dropCap}>{data.summary.charAt(0)}</Text>
-                  {data.summary.slice(1)}
-                </Text>
+                <DropCapText text={data.summary} textStyle={styles.summaryText} capColor={parchment.accent} />
               </View>
             ) : null}
 
@@ -234,7 +232,6 @@ const styles = StyleSheet.create({
     borderLeftWidth: 6,
   },
   summaryText: { fontFamily: fonts.display, fontSize: 19, lineHeight: 27, color: parchment.ink },
-  dropCap: { fontFamily: fonts.display, fontSize: 40, lineHeight: 34, color: parchment.accent },
   section: { gap: 10 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   statCell: {
