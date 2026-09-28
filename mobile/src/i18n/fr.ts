@@ -28,6 +28,19 @@ export const fr = {
     newImage: 'Nouvelle image',
     empty: 'Aucune image pour le moment.',
     imageLabel: 'Image de la médiathèque',
+    working: 'Envoi en cours…',
+    deleteHint: 'Propose de supprimer cette image',
+    deleteTitle: 'Supprimer cette image ?',
+    deleteMessage: 'Elle sera retirée de ta médiathèque.',
+    inUseTitle: 'Image encore utilisée',
+    inUseIntro: 'Remplace-la d’abord à ces endroits :',
+    usageKinds: {
+      story: 'Couverture',
+      scene: 'Décor',
+      enemy: 'Ennemi',
+      item: 'Objet',
+      choice: 'Choix',
+    },
   },
   creatorStories: {
     overline: 'Espace créateur',
@@ -162,6 +175,8 @@ export const fr = {
     IN_COMBAT: 'Termine d’abord le combat.',
     INVALID_CHOICE: 'Ce choix ne fait plus partie de la scène.',
     NO_SAVE: 'Aucune partie en cours pour cette histoire.',
+    UNSUPPORTED_MEDIA_TYPE: 'Seules les images JPEG et PNG sont acceptées.',
+    FST_REQ_FILE_TOO_LARGE: 'L’image dépasse 5 Mo.',
     default: 'Une erreur est survenue. Réessaie.',
   },
   profile: {
