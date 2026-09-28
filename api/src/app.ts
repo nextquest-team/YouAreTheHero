@@ -5,6 +5,8 @@ import staticPlugin from '@fastify/static';
 import fastify, { type FastifyBaseLogger, type FastifyInstance, type RawServerDefault } from 'fastify';
 import { serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod';
 import { env } from './config/env.js';
+import authRoutes from './modules/auth/routes.js';
+import authPlugin from './plugins/auth.js';
 import errorsPlugin from './plugins/errors.js';
 import swaggerPlugin from './plugins/swagger.js';
 
@@ -25,6 +27,8 @@ export async function buildApp(opts: { logger?: boolean } = {}): Promise<App> {
   await app.register(staticPlugin, { root: env.UPLOADS_DIR, prefix: '/uploads/' });
   await app.register(swaggerPlugin);
   await app.register(errorsPlugin);
+  await app.register(authPlugin);
+  await app.register(authRoutes, { prefix: '/auth' });
 
   app.get('/health', async () => ({ status: 'ok' as const }));
 
