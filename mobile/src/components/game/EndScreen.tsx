@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   recap: { width: '100%', maxWidth: 280 },
   recapRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.md, paddingVertical: 10 },
   recapValue: {
-    minWidth: 56,
+    width: 80, // assez pour « 20/20 » : les libellés restent alignés
     fontFamily: fonts.display,
     fontSize: 28,
     lineHeight: 30,
