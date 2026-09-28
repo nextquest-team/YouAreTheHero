@@ -49,6 +49,20 @@ describe('module /me/stories', () => {
     expect(body.id).toBeDefined();
   });
 
+  it('POST /me/stories sans hasCombat crée une histoire avec hasCombat: false', async () => {
+    const { token } = await createUser(app, { role: 'CREATOR' });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/me/stories',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { title: 'Le Donjon', genre: 'Fantastique' },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json().hasCombat).toBe(false);
+  });
+
   it('GET /me/stories liste les histoires du créateur, triées par updatedAt décroissant', async () => {
     const { token } = await createUser(app, { role: 'CREATOR' });
     const first = await createStory(token, { title: 'Première' });
@@ -160,12 +174,12 @@ describe('module /me/stories', () => {
     expect(body.items).toEqual([]);
   });
 
-  it('GET /me/stories/:id trie les ennemis par nom puis id (pas de sortOrder pour eux)', async () => {
+  it('GET /me/stories/:id trie les ennemis par sortOrder puis id', async () => {
     const { token } = await createUser(app, { role: 'CREATOR' });
     const story = await createStory(token);
 
-    await db.insert(enemies).values({ storyId: story.id, name: 'Zombie', attack: 3, hp: 8 });
-    await db.insert(enemies).values({ storyId: story.id, name: 'Araignée', attack: 1, hp: 4 });
+    await db.insert(enemies).values({ storyId: story.id, name: 'Zombie', attack: 3, hp: 8, sortOrder: 1 });
+    await db.insert(enemies).values({ storyId: story.id, name: 'Araignée', attack: 1, hp: 4, sortOrder: 0 });
 
     const response = await app.inject({
       method: 'GET',
@@ -175,6 +189,35 @@ describe('module /me/stories', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json().enemies.map((e: { name: string }) => e.name)).toEqual(['Araignée', 'Zombie']);
+  });
+
+  it("GET /me/stories/:id expose les nouveaux champs d'un ennemi", async () => {
+    const { token } = await createUser(app, { role: 'CREATOR' });
+    const story = await createStory(token);
+
+    await db.insert(enemies).values({
+      storyId: story.id,
+      name: 'Goule',
+      attack: 5,
+      hp: 8,
+      shield: 2,
+      extraStats: [{ name: 'Élément', value: 'Ténèbres' }],
+      defeatEffects: [{ type: 'item', itemId: '3fa85f64-5717-4562-b3fc-2c963f66afa6', qty: 1 }],
+      sortOrder: 0,
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/me/stories/${story.id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const [enemy] = response.json().enemies;
+    expect(enemy.shield).toBe(2);
+    expect(enemy.extraStats).toEqual([{ name: 'Élément', value: 'Ténèbres' }]);
+    expect(enemy.defeatEffects).toEqual([{ type: 'item', itemId: '3fa85f64-5717-4562-b3fc-2c963f66afa6', qty: 1 }]);
+    expect(enemy.sortOrder).toBe(0);
   });
 
   it('PATCH /me/stories/:id modifie les champs fournis', async () => {
@@ -299,6 +342,60 @@ describe('module /me/stories', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json().attackStatId).toBeNull();
+  });
+
+  it('PATCH /me/stories/:id { hasCombat: true } passe l’histoire en combat', async () => {
+    const { token } = await createUser(app, { role: 'CREATOR' });
+    const story = await createStory(token);
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/me/stories/${story.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { hasCombat: true },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().hasCombat).toBe(true);
+  });
+
+  it('PATCH /me/stories/:id { hasCombat: false } répond 422 HAS_COMBAT_SCENES si une scène a un ennemi', async () => {
+    const { token } = await createUser(app, { role: 'CREATOR' });
+    const story = await createStory(token, { hasCombat: true });
+    const [enemy] = await db
+      .insert(enemies)
+      .values({ storyId: story.id, name: 'Gobelin', attack: 2, hp: 5 })
+      .returning();
+    const [scene] = await db
+      .insert(scenes)
+      .values({ storyId: story.id, title: 'Combat', text: 'texte', enemyId: enemy.id })
+      .returning();
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/me/stories/${story.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { hasCombat: false },
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(response.json().error.code).toBe('HAS_COMBAT_SCENES');
+    expect(response.json().error.sceneIds).toEqual([scene.id]);
+  });
+
+  it('PATCH /me/stories/:id { hasCombat: false } répond 200 sans scène à ennemi', async () => {
+    const { token } = await createUser(app, { role: 'CREATOR' });
+    const story = await createStory(token, { hasCombat: true });
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/me/stories/${story.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { hasCombat: false },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().hasCombat).toBe(false);
   });
 
   it('DELETE /me/stories/:id supprime l’histoire', async () => {

@@ -50,6 +50,36 @@ describe('seed de démo', () => {
     expect(existsSync(path.join(env.UPLOADS_DIR, 'crypte-couverture.png'))).toBe(true);
   });
 
+  it('le butin de la Goule donne +1 Clé', async () => {
+    const [crypt] = await db.select().from(stories).where(eq(stories.published, true));
+    const [goule] = await db.select().from(enemies).where(eq(enemies.storyId, crypt.id));
+    const cryptItems = await db.select().from(items).where(eq(items.storyId, crypt.id));
+    const cle = cryptItems.find((item) => item.name === 'Clé rouillée')!;
+
+    expect(goule.defeatEffects).toEqual([{ type: 'item', itemId: cle.id, qty: 1 }]);
+  });
+
+  it("une histoire sans combats n'a aucune scène avec ennemi", async () => {
+    const [draft] = await db.select().from(stories).where(eq(stories.published, false));
+    expect(draft.hasCombat).toBe(false);
+
+    const draftScenes = await db.select().from(scenes).where(eq(scenes.storyId, draft.id));
+    for (const scene of draftScenes) {
+      expect(scene.enemyId).toBeNull();
+    }
+  });
+
+  it('toute histoire qui a une scène de combat a hasCombat = true', async () => {
+    const allStories = await db.select().from(stories);
+    for (const currentStory of allStories) {
+      const storyScenes = await db.select().from(scenes).where(eq(scenes.storyId, currentStory.id));
+      const hasCombatScene = storyScenes.some((scene) => scene.enemyId !== null);
+      if (hasCombatScene) {
+        expect(currentStory.hasCombat).toBe(true);
+      }
+    }
+  });
+
   describe("l'histoire publiée respecte les règles de validation avant publication (docs/conception.md §4)", () => {
     let story: typeof stories.$inferSelect;
     let allStats: (typeof statDefinitions.$inferSelect)[];

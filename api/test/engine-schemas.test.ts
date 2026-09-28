@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { conditionSchema, effectSchema } from '../src/engine/schemas.js';
+import { combatStateSchema, conditionSchema, effectSchema, extraStatsSchema } from '../src/engine/schemas.js';
 
 describe('conditionSchema', () => {
   it('accepte une condition de stat valide', () => {
@@ -52,6 +52,43 @@ describe('effectSchema', () => {
       statId: randomUUID(),
       delta: 1,
     });
+
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('combatStateSchema', () => {
+  it('refuse un objet sans enemyShield', () => {
+    const result = combatStateSchema.safeParse({
+      enemyId: randomUUID(),
+      enemyHp: 8,
+      log: [],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('accepte un état de combat complet avec enemyShield', () => {
+    const result = combatStateSchema.safeParse({
+      enemyId: randomUUID(),
+      enemyHp: 8,
+      enemyShield: 3,
+      log: [],
+    });
+
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('extraStatsSchema', () => {
+  it('accepte une liste de caractéristiques libres valide', () => {
+    const result = extraStatsSchema.safeParse([{ name: 'Rapidité', value: '3' }]);
+
+    expect(result.success).toBe(true);
+  });
+
+  it('refuse une caractéristique sans nom', () => {
+    const result = extraStatsSchema.safeParse([{ name: '', value: '3' }]);
 
     expect(result.success).toBe(false);
   });

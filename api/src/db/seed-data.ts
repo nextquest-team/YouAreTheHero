@@ -21,12 +21,20 @@ export interface SeedStat {
   max: number | null;
 }
 
+export interface SeedExtraStat {
+  name: string;
+  value: string;
+}
+
 export interface SeedEnemy {
   key: string;
   name: string;
   imageUrl: string | null;
   attack: number;
   hp: number;
+  shield: number;
+  extraStats: SeedExtraStat[];
+  defeatEffects: SeedEffect[];
 }
 
 export type SeedCondition =
@@ -71,6 +79,7 @@ export interface SeedStory {
   genre: string;
   coverUrl: string | null;
   published: boolean;
+  hasCombat: boolean;
   stats: SeedStat[];
   attackStatKey: string | null;
   hpStatKey: string | null;
@@ -100,6 +109,7 @@ export const cryptStory: SeedStory = {
   genre: 'Fantasy',
   coverUrl: '/uploads/crypte-couverture.png',
   published: true,
+  hasCombat: true,
   stats: [
     { key: 'nom', name: 'Nom', type: 'text', defaultValue: 'Aventurier', min: null, max: null },
     { key: 'force', name: 'Force', type: 'number', defaultValue: '5', min: 0, max: 20 },
@@ -107,7 +117,18 @@ export const cryptStory: SeedStory = {
   ],
   attackStatKey: 'force',
   hpStatKey: 'pv',
-  enemies: [{ key: 'goule', name: 'Goule', imageUrl: '/uploads/goule.png', attack: 5, hp: 8 }],
+  enemies: [
+    {
+      key: 'goule',
+      name: 'Goule',
+      imageUrl: '/uploads/goule.png',
+      attack: 5,
+      hp: 8,
+      shield: 2,
+      extraStats: [{ name: 'Élément', value: 'Ténèbres' }],
+      defeatEffects: [{ type: 'item', itemKey: 'cle', qty: 1 }],
+    },
+  ],
   items: [
     {
       key: 'potion',
@@ -179,7 +200,8 @@ export const cryptStory: SeedStory = {
       enemyKey: null,
       winSceneKey: null,
       loseSceneKey: null,
-      onEnterEffects: [{ type: 'item', itemKey: 'cle', qty: 1 }],
+      // La clé est désormais dans le butin (defeatEffects) de la Goule, pas ici : sinon double récompense.
+      onEnterEffects: [],
     },
     {
       key: 'vaincu',
@@ -269,6 +291,7 @@ export const lighthouseStory: SeedStory = {
   genre: 'Mystère',
   coverUrl: null,
   published: false,
+  hasCombat: false,
   stats: [],
   attackStatKey: null,
   hpStatKey: null,

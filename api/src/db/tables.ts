@@ -10,5 +10,6 @@ export const ALL_TABLES = [
   'enemies',
   'stat_definitions',
   'stories',
+  'media',
   'users',
 ] as const;

@@ -12,6 +12,13 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
+CREATE TABLE "media" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"owner_id" uuid NOT NULL,
+	"url" text NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "choices" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"from_scene_id" uuid NOT NULL,
@@ -28,7 +35,11 @@ CREATE TABLE "enemies" (
 	"name" text NOT NULL,
 	"image_url" text,
 	"attack" integer NOT NULL,
-	"hp" integer NOT NULL
+	"hp" integer NOT NULL,
+	"shield" integer DEFAULT 0 NOT NULL,
+	"extra_stats" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"defeat_effects" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"sort_order" integer DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "items" (
@@ -73,6 +84,7 @@ CREATE TABLE "stories" (
 	"summary" text DEFAULT '' NOT NULL,
 	"genre" text NOT NULL,
 	"cover_url" text,
+	"has_combat" boolean DEFAULT false NOT NULL,
 	"start_scene_id" uuid,
 	"attack_stat_id" uuid,
 	"hp_stat_id" uuid,
@@ -115,6 +127,7 @@ CREATE TABLE "saves" (
 	CONSTRAINT "saves_user_id_story_id_unique" UNIQUE("user_id","story_id")
 );
 --> statement-breakpoint
+ALTER TABLE "media" ADD CONSTRAINT "media_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "choices" ADD CONSTRAINT "choices_from_scene_id_scenes_id_fk" FOREIGN KEY ("from_scene_id") REFERENCES "public"."scenes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "choices" ADD CONSTRAINT "choices_to_scene_id_scenes_id_fk" FOREIGN KEY ("to_scene_id") REFERENCES "public"."scenes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "enemies" ADD CONSTRAINT "enemies_story_id_stories_id_fk" FOREIGN KEY ("story_id") REFERENCES "public"."stories"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -135,5 +148,6 @@ ALTER TABLE "reviews" ADD CONSTRAINT "reviews_story_id_stories_id_fk" FOREIGN KE
 ALTER TABLE "saves" ADD CONSTRAINT "saves_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "saves" ADD CONSTRAINT "saves_story_id_stories_id_fk" FOREIGN KEY ("story_id") REFERENCES "public"."stories"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "saves" ADD CONSTRAINT "saves_current_scene_id_scenes_id_fk" FOREIGN KEY ("current_scene_id") REFERENCES "public"."scenes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "media_owner_id_idx" ON "media" USING btree ("owner_id");--> statement-breakpoint
 CREATE INDEX "stories_published_idx" ON "stories" USING btree ("published");--> statement-breakpoint
 CREATE INDEX "stories_author_id_idx" ON "stories" USING btree ("author_id");

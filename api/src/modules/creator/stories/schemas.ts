@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { conditionSchema, effectSchema } from '../../../engine/schemas.js';
+import { conditionSchema, effectSchema, extraStatSchema } from '../../../engine/schemas.js';
 import { uploadPathSchema } from '../../../lib/schemas.js';
 
 export const idParamSchema = z.object({ id: z.uuid() });
@@ -10,6 +10,7 @@ export const storySchema = z.object({
   summary: z.string(),
   genre: z.string(),
   coverUrl: z.string().nullable(),
+  hasCombat: z.boolean(),
   startSceneId: z.uuid().nullable(),
   attackStatId: z.uuid().nullable(),
   hpStatId: z.uuid().nullable(),
@@ -38,6 +39,10 @@ const enemySchema = z.object({
   imageUrl: z.string().nullable(),
   attack: z.number(),
   hp: z.number(),
+  shield: z.number(),
+  extraStats: z.array(extraStatSchema),
+  defeatEffects: z.array(effectSchema),
+  sortOrder: z.number(),
 });
 
 const itemSchema = z.object({
@@ -85,6 +90,7 @@ export const createStoryBodySchema = z.object({
   summary: z.string().default(''),
   genre: z.string().min(1).max(40),
   coverUrl: uploadPathSchema.optional(),
+  hasCombat: z.boolean().default(false),
 });
 export type CreateStoryBody = z.infer<typeof createStoryBodySchema>;
 
@@ -93,6 +99,7 @@ export const updateStoryBodySchema = z.object({
   summary: z.string().optional(),
   genre: z.string().min(1).max(40).optional(),
   coverUrl: uploadPathSchema.nullable().optional(),
+  hasCombat: z.boolean().optional(),
   startSceneId: z.uuid().nullable().optional(),
   attackStatId: z.uuid().nullable().optional(),
   hpStatId: z.uuid().nullable().optional(),

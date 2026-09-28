@@ -69,6 +69,7 @@ async function seedStory(tx: Tx, authorId: string, story: SeedStory): Promise<vo
       summary: story.summary,
       genre: story.genre,
       coverUrl: story.coverUrl,
+      hasCombat: story.hasCombat,
       published: story.published,
       publishedAt: story.published ? new Date() : null,
     })
@@ -91,15 +92,6 @@ async function seedStory(tx: Tx, authorId: string, story: SeedStory): Promise<vo
     statIds.set(stat.key, row.id);
   }
 
-  const enemyIds = new Map<string, string>();
-  for (const enemy of story.enemies) {
-    const [row] = await tx
-      .insert(enemies)
-      .values({ storyId: createdStory.id, name: enemy.name, imageUrl: enemy.imageUrl, attack: enemy.attack, hp: enemy.hp })
-      .returning();
-    enemyIds.set(enemy.key, row.id);
-  }
-
   const itemIds = new Map<string, string>();
   for (const [index, item] of story.items.entries()) {
     // Les useEffects d'un objet référencent une stat déjà insérée juste au-dessus (ex. Potion -> PV).
@@ -116,6 +108,26 @@ async function seedStory(tx: Tx, authorId: string, story: SeedStory): Promise<vo
       })
       .returning();
     itemIds.set(item.key, row.id);
+  }
+
+  const enemyIds = new Map<string, string>();
+  for (const [index, enemy] of story.enemies.entries()) {
+    // Le butin (defeatEffects) référence les objets insérés juste au-dessus (ex. Goule -> Clé rouillée).
+    const [row] = await tx
+      .insert(enemies)
+      .values({
+        storyId: createdStory.id,
+        name: enemy.name,
+        imageUrl: enemy.imageUrl,
+        attack: enemy.attack,
+        hp: enemy.hp,
+        shield: enemy.shield,
+        extraStats: enemy.extraStats,
+        defeatEffects: resolveEffects(enemy.defeatEffects, statIds, itemIds),
+        sortOrder: index,
+      })
+      .returning();
+    enemyIds.set(enemy.key, row.id);
   }
 
   const sceneIds = new Map<string, string>();

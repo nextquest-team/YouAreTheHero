@@ -10,7 +10,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import type { Condition, Effect } from '../../engine/schemas.js';
+import type { Condition, Effect, ExtraStat } from '../../engine/schemas.js';
 import { statTypeEnum } from './enums.js';
 import { users } from './users.js';
 
@@ -27,6 +27,8 @@ export const stories = pgTable(
     summary: text().notNull().default(''),
     genre: text().notNull(),
     coverUrl: text(),
+    // Histoire avec ou sans combats : sans combats, pas d'ennemi ni de scène de combat.
+    hasCombat: boolean().notNull().default(false),
     startSceneId: uuid().references((): AnyPgColumn => scenes.id, { onDelete: 'set null' }),
     attackStatId: uuid().references((): AnyPgColumn => statDefinitions.id, { onDelete: 'set null' }),
     hpStatId: uuid().references((): AnyPgColumn => statDefinitions.id, { onDelete: 'set null' }),
@@ -67,6 +69,18 @@ export const enemies = pgTable('enemies', {
   imageUrl: text(),
   attack: integer().notNull(),
   hp: integer().notNull(),
+  shield: integer().notNull().default(0),
+  // Caractéristiques libres, juste affichées au joueur (le combat ne porte que sur attack/hp/shield).
+  extraStats: jsonb()
+    .notNull()
+    .default(sql`'[]'::jsonb`)
+    .$type<ExtraStat[]>(),
+  // Butin remporté quand l'ennemi est vaincu (même format que les autres listes d'effets).
+  defeatEffects: jsonb()
+    .notNull()
+    .default(sql`'[]'::jsonb`)
+    .$type<Effect[]>(),
+  sortOrder: integer().notNull().default(0),
 });
 
 export const items = pgTable('items', {

@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { db } from '../../../db/index.js';
 import { choices, enemies, items, scenes, statDefinitions, stories } from '../../../db/schema/index.js';
 import { unprocessable } from '../../../lib/errors.js';
@@ -12,6 +12,7 @@ function toDto(story: Story): StoryDto {
     summary: story.summary,
     genre: story.genre,
     coverUrl: story.coverUrl,
+    hasCombat: story.hasCombat,
     startSceneId: story.startSceneId,
     attackStatId: story.attackStatId,
     hpStatId: story.hpStatId,
@@ -36,6 +37,7 @@ export async function create(userId: string, input: CreateStoryBody): Promise<St
       summary: input.summary,
       genre: input.genre,
       coverUrl: input.coverUrl ?? null,
+      hasCombat: input.hasCombat,
     })
     .returning();
   return toDto(created);
@@ -52,8 +54,7 @@ export async function getFull(story: Story): Promise<StoryFullDto> {
       .from(statDefinitions)
       .where(eq(statDefinitions.storyId, story.id))
       .orderBy(asc(statDefinitions.sortOrder), asc(statDefinitions.id)),
-    // Pas de sortOrder sur les ennemis : tri par nom puis id (un tri par uuid seul serait arbitraire).
-    db.select().from(enemies).where(eq(enemies.storyId, story.id)).orderBy(asc(enemies.name), asc(enemies.id)),
+    db.select().from(enemies).where(eq(enemies.storyId, story.id)).orderBy(asc(enemies.sortOrder), asc(enemies.id)),
     db.select().from(items).where(eq(items.storyId, story.id)).orderBy(asc(items.sortOrder), asc(items.id)),
     db.select().from(scenes).where(eq(scenes.storyId, story.id)).orderBy(asc(scenes.sortOrder), asc(scenes.id)),
   ]);
@@ -92,6 +93,10 @@ export async function getFull(story: Story): Promise<StoryFullDto> {
       imageUrl: enemy.imageUrl,
       attack: enemy.attack,
       hp: enemy.hp,
+      shield: enemy.shield,
+      extraStats: enemy.extraStats,
+      defeatEffects: enemy.defeatEffects,
+      sortOrder: enemy.sortOrder,
     })),
     items: itemRows.map((item) => ({
       id: item.id,
@@ -147,8 +152,25 @@ async function validateReferences(storyId: string, input: UpdateStoryBody): Prom
   }
 }
 
+/** Repasser en sans-combats est refusé tant qu'une scène de l'histoire a encore un ennemi. */
+async function validateHasCombat(storyId: string, input: UpdateStoryBody): Promise<void> {
+  if (input.hasCombat !== false) {
+    return;
+  }
+  const rows = await db
+    .select({ id: scenes.id })
+    .from(scenes)
+    .where(and(eq(scenes.storyId, storyId), isNotNull(scenes.enemyId)));
+  if (rows.length > 0) {
+    throw unprocessable('HAS_COMBAT_SCENES', "Des scènes de l'histoire ont encore un ennemi", {
+      sceneIds: rows.map((row) => row.id),
+    });
+  }
+}
+
 export async function update(story: Story, input: UpdateStoryBody): Promise<StoryDto> {
   await validateReferences(story.id, input);
+  await validateHasCombat(story.id, input);
 
   const updates: Partial<typeof stories.$inferInsert> = {};
   if (input.title !== undefined) {
@@ -162,6 +184,9 @@ export async function update(story: Story, input: UpdateStoryBody): Promise<Stor
   }
   if (input.coverUrl !== undefined) {
     updates.coverUrl = input.coverUrl;
+  }
+  if (input.hasCombat !== undefined) {
+    updates.hasCombat = input.hasCombat;
   }
   if (input.startSceneId !== undefined) {
     updates.startSceneId = input.startSceneId;

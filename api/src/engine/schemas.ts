@@ -37,9 +37,20 @@ export type Effect = z.infer<typeof effectSchema>;
 
 export const effectsSchema = z.array(effectSchema);
 
+// Caractéristique libre d'un ennemi (ex. « Élément » / « Ténèbres ») : purement affichée au
+// joueur, sans effet sur le combat (voir docs/conception.md section 3).
+export const extraStatSchema = z.object({
+  name: z.string().min(1),
+  value: z.string(),
+});
+export type ExtraStat = z.infer<typeof extraStatSchema>;
+
+export const extraStatsSchema = z.array(extraStatSchema);
+
 export const combatStateSchema = z.object({
   enemyId: z.uuid(),
   enemyHp: z.int(),
+  enemyShield: z.number().int().min(0),
   log: z.array(z.string()),
 });
 export type CombatState = z.infer<typeof combatStateSchema>;

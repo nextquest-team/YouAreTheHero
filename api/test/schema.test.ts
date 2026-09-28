@@ -7,6 +7,7 @@ import {
   enemies,
   favorites,
   items,
+  media,
   reviews,
   saves,
   scenes,
@@ -186,5 +187,36 @@ describe('schéma Drizzle : suppressions en cascade / SET NULL', () => {
     await db.insert(favorites).values({ userId: player.id, storyId: story.id });
 
     await expect(db.insert(favorites).values({ userId: player.id, storyId: story.id })).rejects.toThrow();
+  });
+
+  it('supprimer un utilisateur supprime ses media', async () => {
+    const author = await createUser('CREATOR');
+    const [image] = await db.insert(media).values({ ownerId: author.id, url: '/uploads/photo.png' }).returning();
+
+    await db.delete(users).where(eq(users.id, author.id));
+
+    expect(await db.select().from(media).where(eq(media.id, image.id))).toHaveLength(0);
+  });
+
+  it('stories.hasCombat vaut false par défaut', async () => {
+    const author = await createUser('CREATOR');
+    const story = await createStory(author.id);
+
+    expect(story.hasCombat).toBe(false);
+  });
+
+  it('un ennemi inséré sans les nouveaux champs a leurs valeurs par défaut', async () => {
+    const author = await createUser('CREATOR');
+    const story = await createStory(author.id);
+
+    const [enemy] = await db
+      .insert(enemies)
+      .values({ storyId: story.id, name: 'Gobelin', attack: 2, hp: 5 })
+      .returning();
+
+    expect(enemy.shield).toBe(0);
+    expect(enemy.extraStats).toEqual([]);
+    expect(enemy.defeatEffects).toEqual([]);
+    expect(enemy.sortOrder).toBe(0);
   });
 });
