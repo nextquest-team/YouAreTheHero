@@ -106,6 +106,14 @@ export default function StoryEditorScreen() {
             detail={count(fr.items, data.items.length)}
             onPress={() => router.push({ pathname: '/editor/[id]/items', params: { id } })}
           />
+          {data.hasCombat ? (
+            <EditorLink
+              icon="shield"
+              label={fr.enemies.title}
+              detail={count(fr.enemies, data.enemies.length)}
+              onPress={() => router.push({ pathname: '/editor/[id]/enemies', params: { id } })}
+            />
+          ) : null}
 
           {editor.busy ? <ActivityIndicator color={colors.accent} accessibilityLabel={fr.common.loading} /> : null}
           {editor.actionError ? (
