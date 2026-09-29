@@ -3,3 +3,5 @@ node_modules/
 .DS_Store
 api/uploads/
 api/dist/
+tools/illustrations/build/
+__pycache__/

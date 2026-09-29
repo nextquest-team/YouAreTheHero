@@ -24,7 +24,7 @@ async function copySeedAssets(): Promise<void> {
   await mkdir(env.UPLOADS_DIR, { recursive: true });
   const files = await readdir(seedAssetsDir);
   for (const file of files) {
-    if (!file.endsWith('.png')) {
+    if (!/\.(png|jpg)$/.test(file)) {
       continue;
     }
     await copyFile(path.join(seedAssetsDir, file), path.join(env.UPLOADS_DIR, file));

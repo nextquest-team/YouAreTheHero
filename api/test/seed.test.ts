@@ -51,6 +51,19 @@ describe('seed de démo', () => {
     expect(existsSync(path.join(env.UPLOADS_DIR, 'crypte-couverture.png'))).toBe(true);
   });
 
+  it('toute image référencée par le seed existe dans UPLOADS_DIR', () => {
+    const urls = seedStories.flatMap((story) => [
+      story.coverUrl,
+      ...story.scenes.map((s) => s.backgroundUrl),
+      ...story.items.map((i) => i.imageUrl),
+      ...story.enemies.map((e) => e.imageUrl),
+    ]);
+    const missing = urls
+      .filter((url): url is string => url !== null)
+      .filter((url) => !existsSync(path.join(env.UPLOADS_DIR, url.replace('/uploads/', ''))));
+    expect(missing).toEqual([]);
+  });
+
   it('le butin de la Goule donne +1 Clé', async () => {
     const [crypt] = await db.select().from(stories).where(eq(stories.title, 'La Crypte du Roi Oublié'));
     const [goule] = await db.select().from(enemies).where(eq(enemies.storyId, crypt.id));

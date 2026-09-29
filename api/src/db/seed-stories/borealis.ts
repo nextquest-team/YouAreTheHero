@@ -1,5 +1,15 @@
 import type { SeedStory } from '../seed-data.js';
-import { atLeast, atMost, choice, ending, gain, give, has, numberStat, scene, textStat } from './helpers.js';
+import { atLeast, atMost, choice, ending, gain, give, has, numberStat, scene, textStat, withBackdrops } from './helpers.js';
+
+// Un décor par lieu, partagé par les scènes qui s'y déroulent.
+const BACKDROPS: Record<string, string[]> = {
+  '/uploads/borealis-decor-exterieur.jpg': ['arrivee', 'exterieur', 'evacuation', 'finSauves', 'finAube'],
+  '/uploads/borealis-decor-couloir.jpg': ['sas', 'carrefour', 'dortoirs'],
+  '/uploads/borealis-decor-spores.jpg': ['contamination', 'finContagion'],
+  '/uploads/borealis-decor-radio.jpg': ['radio', 'haldis', 'attente', 'finHaldis', 'finNoir'],
+  '/uploads/borealis-decor-generateur.jpg': ['generateur', 'courant'],
+  '/uploads/borealis-decor-labo.jpg': ['laboVitre', 'finQuarantaine'],
+};
 
 /**
  * Enquête de science-fiction sans combat, 19 scènes et 6 fins. Le Sang-froid baisse à mesure
@@ -11,7 +21,7 @@ export const borealisStory: SeedStory = {
   summary:
     "Svalbard, 2091. La station de recherche Borealis ne répond plus depuis douze jours. On t'y dépose avec une lampe et une mission simple : comprendre ce qui s'est passé. Rien, là-haut, ne sera simple.",
   genre: 'Science-fiction',
-  coverUrl: null,
+  coverUrl: '/uploads/borealis-couverture.jpg',
   published: true,
   hasCombat: false,
   stats: [
@@ -27,33 +37,33 @@ export const borealisStory: SeedStory = {
       key: 'lampe',
       name: 'Lampe frontale',
       description: 'Batterie pleine. Pour combien de temps ?',
-      imageUrl: null,
+      imageUrl: '/uploads/borealis-objet-lampe.jpg',
       useEffects: null,
     },
     {
       key: 'badge',
       name: 'Badge de Solberg',
       description: "Dr Ingrid Solberg, commandante. Accès : tous niveaux. Le cordon est arraché.",
-      imageUrl: null,
+      imageUrl: '/uploads/borealis-objet-badge.jpg',
       useEffects: null,
     },
     {
       key: 'journal',
       name: 'Journal de bord',
       description: "Les notes de la commandante. Les dernières pages sont écrites de plus en plus gros.",
-      imageUrl: null,
+      imageUrl: '/uploads/borealis-objet-journal.jpg',
       useEffects: null,
     },
     {
       key: 'cafe',
       name: 'Thermos de café',
       description: 'Encore tiède. Une gorgée remet les idées en place.',
-      imageUrl: null,
+      imageUrl: '/uploads/borealis-objet-cafe.jpg',
       useEffects: [gain('sangfroid', 2)],
     },
   ],
   startSceneKey: 'arrivee',
-  scenes: [
+  scenes: withBackdrops([
     scene(
       'arrivee',
       "L'hélistation",
@@ -157,7 +167,7 @@ export const borealisStory: SeedStory = {
       'Le noir complet',
       "Tu arraches le câble du terminal. HALDIS se tait au milieu d'une phrase. Une seconde plus tard, le système de secours prend le relais, sans aucune consigne : le chauffage repart à fond dans toute la station. Dans le laboratoire, quelque chose se réveille. Tu n'entends plus que ton propre souffle, et bientôt, plus rien.",
     ),
-  ],
+  ], BACKDROPS),
   choices: [
     choice('arrivee', 'sas', 'Entrer tout de suite par le sas principal'),
     choice('arrivee', 'exterieur', "Faire d'abord le tour du bâtiment"),

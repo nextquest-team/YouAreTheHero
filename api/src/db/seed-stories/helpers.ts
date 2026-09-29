@@ -35,6 +35,21 @@ export function fight(
   return scene(key, title, text, { ...options, enemyKey: combat.enemy, winSceneKey: combat.win, loseSceneKey: combat.lose });
 }
 
+/**
+ * Plusieurs scènes partagent souvent le même décor : on les regroupe par image
+ * ({ '/uploads/decor.jpg': ['scene1', 'scene2'] }). Une clé inconnue fait échouer le seed.
+ */
+export function withBackdrops(scenes: SeedScene[], backdrops: Record<string, string[]>): SeedScene[] {
+  const byKey = new Map<string, string>();
+  for (const [url, keys] of Object.entries(backdrops)) {
+    for (const key of keys) {
+      if (!scenes.some((s) => s.key === key)) throw new Error(`Décor ${url} : scène inconnue « ${key} »`);
+      byKey.set(key, url);
+    }
+  }
+  return scenes.map((s) => ({ ...s, backgroundUrl: byKey.get(s.key) ?? s.backgroundUrl }));
+}
+
 export function choice(
   fromKey: string,
   toKey: string,

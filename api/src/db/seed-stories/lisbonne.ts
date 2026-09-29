@@ -1,5 +1,16 @@
 import type { SeedStory } from '../seed-data.js';
-import { atLeast, choice, ending, gain, give, has, numberStat, scene, textStat } from './helpers.js';
+import { atLeast, choice, ending, gain, give, has, numberStat, scene, textStat, withBackdrops } from './helpers.js';
+
+// Un décor par lieu, partagé par les scènes qui s'y déroulent.
+const BACKDROPS: Record<string, string[]> = {
+  '/uploads/lisbonne-decor-alfama.jpg': ['arrivee', 'semaine'],
+  '/uploads/lisbonne-decor-toit.jpg': ['terrasse', 'chateau', 'aube', 'finAmis', 'finLisboeta'],
+  '/uploads/lisbonne-decor-cafe.jpg': ['cafe', 'avo', 'finInesReste', 'finInesRetour'],
+  '/uploads/lisbonne-decor-fado.jpg': ['fado', 'finTomasTournee', 'finTomasChanson'],
+  '/uploads/lisbonne-decor-azulejos.jpg': ['azulejos'],
+  '/uploads/lisbonne-decor-tram.jpg': ['tram'],
+  '/uploads/lisbonne-decor-festa.jpg': ['festa', 'baiserInes', 'baiserTomas'],
+};
 
 /**
  * Romance contemporaine sans combat, 19 scènes et 6 fins. Deux personnages à qui s'attacher,
@@ -11,7 +22,7 @@ export const lisbonStory: SeedStory = {
   summary:
     "Trois mois de stage, une colocation perchée dans l'Alfama et une ville qui sent la sardine grillée. Entre Inês, qui restaure les azulejos du quartier, et Tomás, ton colocataire guitariste, l'été risque de passer trop vite.",
   genre: 'Romance',
-  coverUrl: null,
+  coverUrl: '/uploads/lisbonne-couverture.jpg',
   published: true,
   hasCombat: false,
   stats: [
@@ -28,33 +39,33 @@ export const lisbonStory: SeedStory = {
       key: 'cle',
       name: 'Clé de la coloc',
       description: "Accrochée à un porte-clés en forme de sardine. La porte d'entrée coince quand il pleut.",
-      imageUrl: null,
+      imageUrl: '/uploads/lisbonne-objet-cle.jpg',
       useEffects: null,
     },
     {
       key: 'dico',
       name: 'Dictionnaire de poche',
       description: "Glissé dans ta valise au dernier moment. Le feuilleter t'apprend quelques mots de plus.",
-      imageUrl: null,
+      imageUrl: '/uploads/lisbonne-objet-dico.jpg',
       useEffects: [gain('portugais', 1)],
     },
     {
       key: 'vinyle',
       name: 'Vinyle de fado',
       description: "Amália Rodrigues, pochette usée. Tomás dit que tout ce qu'il sait vient de là.",
-      imageUrl: null,
+      imageUrl: '/uploads/lisbonne-objet-vinyle.jpg',
       useEffects: null,
     },
     {
       key: 'azulejo',
       name: 'Azulejo fêlé',
       description: 'Un carreau bleu et blanc, trop abîmé pour le mur, offert par Inês.',
-      imageUrl: null,
+      imageUrl: '/uploads/lisbonne-objet-azulejo.jpg',
       useEffects: null,
     },
   ],
   startSceneKey: 'arrivee',
-  scenes: [
+  scenes: withBackdrops([
     scene(
       'arrivee',
       'Rua dos Remédios',
@@ -156,7 +167,7 @@ export const lisbonStory: SeedStory = {
       'Lisboeta',
       "Tu annules ton billet retour. Le portugais te vient maintenant sans réfléchir, et les voisins t'appellent par ton prénom. Tu trouves un travail, un petit appartement avec vue sur le Tage, et une place réservée au Café Azul. Cet été, c'est la ville elle-même qui t'a gardé le cœur.",
     ),
-  ],
+  ], BACKDROPS),
   choices: [
     choice('arrivee', 'terrasse', 'Aider Tomás à monter ses amplis'),
     choice('arrivee', 'cafe', 'Descendre boire un café au coin de la rue'),
