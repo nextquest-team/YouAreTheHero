@@ -125,10 +125,101 @@ export type CreatorStory = {
   updatedAt: string;
 };
 
-// Histoire complète renvoyée par GET /me/stories/:id. Seuls les champs lus par l'éditeur sont typés ici.
+// Condition d'un choix et effets (choix, entrée de scène, objet utilisé, butin d'un ennemi).
+// Une quantité négative d'objet le retire de l'inventaire.
+export type Condition =
+  | { type: 'stat'; statId: string; op: '>=' | '<=' | '=='; value: number }
+  | { type: 'item'; itemId: string; op: 'has' | 'not_has' };
+
+export type Effect = { type: 'stat'; statId: string; delta: number } | { type: 'item'; itemId: string; qty: number };
+
+export type Enemy = {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  attack: number;
+  hp: number;
+  shield: number;
+  extraStats: { name: string; value: string }[];
+  defeatEffects: Effect[];
+  sortOrder: number;
+};
+
+// useEffects null : l'objet ne s'utilise pas depuis le sac.
+export type Item = {
+  id: string;
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  useEffects: Effect[] | null;
+  sortOrder: number;
+};
+
+export type Choice = {
+  id: string;
+  toSceneId: string;
+  label: string;
+  condition: Condition | null;
+  effects: Effect[];
+  sortOrder: number;
+};
+
+export type Scene = {
+  id: string;
+  title: string;
+  text: string;
+  backgroundUrl: string | null;
+  isEnding: boolean;
+  enemyId: string | null;
+  winSceneId: string | null;
+  loseSceneId: string | null;
+  onEnterEffects: Effect[];
+  sortOrder: number;
+  choices: Choice[];
+};
+
+// Histoire complète renvoyée par GET /me/stories/:id.
 export type CreatorStoryFull = CreatorStory & {
   stats: StatDefinition[];
-  scenes: { id: string; title: string; isEnding: boolean; enemyId: string | null }[];
+  enemies: Enemy[];
+  items: Item[];
+  scenes: Scene[];
+};
+
+// Corps des créations ; au PATCH tous les champs sont facultatifs, null efface un champ nullable.
+export type ItemInput = {
+  name: string;
+  description: string | null;
+  imageUrl: string | null;
+  useEffects: Effect[] | null;
+};
+
+export type EnemyInput = {
+  name: string;
+  imageUrl: string | null;
+  attack: number;
+  hp: number;
+  shield: number;
+  extraStats: { name: string; value: string }[];
+  defeatEffects: Effect[];
+};
+
+export type SceneInput = {
+  title: string;
+  text: string;
+  backgroundUrl: string | null;
+  isEnding: boolean;
+  enemyId: string | null;
+  winSceneId: string | null;
+  loseSceneId: string | null;
+  onEnterEffects: Effect[];
+};
+
+export type ChoiceInput = {
+  toSceneId: string;
+  label: string;
+  condition: Condition | null;
+  effects: Effect[];
 };
 
 export type CreateStoryInput = {
@@ -146,7 +237,6 @@ export type UpdateStoryInput = Partial<Omit<CreateStoryInput, 'coverUrl'>> & {
   hpStatId?: string | null;
 };
 
-// Problème relevé avant publication (détail d'un 422 STORY_INVALID, ou avertissement d'une publication réussie).
 export type StatInput = {
   name: string;
   type: 'number' | 'text';
@@ -155,6 +245,7 @@ export type StatInput = {
   max: number | null;
 };
 
+// Problème relevé avant publication (détail d'un 422 STORY_INVALID, ou avertissement d'une publication réussie).
 export type PublishIssue = { code: string; message: string; sceneId: string | null };
 
 export type PublishResult = CreatorStory & { warnings: PublishIssue[] };
