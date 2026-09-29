@@ -3,12 +3,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 
 import { fr } from '@/i18n/fr';
-import { cropToHeroPhoto } from '@/services/heroPhoto';
+import { cropToHeroPhoto, ovalRegion } from '@/services/heroPhoto';
 
-type RawPhoto = { uri: string; width: number; height: number };
+type Size = { width: number; height: number };
+type RawPhoto = Size & { uri: string; region?: Size };
 
 /**
- * Recadrage carré + redimensionnement communs à la capture caméra et à la galerie.
+ * Recadrage 4:5 + réduction communs à la capture caméra et à la galerie.
  * La galerie n'exige aucune permission sur iOS récent (sélecteur système) : on ne
  * demande donc rien avant de l'ouvrir, contrairement à la caméra (gérée dans l'écran).
  */
@@ -22,7 +23,7 @@ export function useHeroPhoto() {
     try {
       const raw = await task();
       if (!raw) return null;
-      return await cropToHeroPhoto(raw.uri, raw.width, raw.height);
+      return await cropToHeroPhoto(raw.uri, raw, raw.region);
     } catch {
       setError(failMessage);
       return null;
@@ -39,12 +40,13 @@ export function useHeroPhoto() {
       return { uri: asset.uri, width: asset.width, height: asset.height };
     }, fr.selfie.pickFailed);
 
-  const captureFromCamera = (camera: CameraView | null) =>
+  /** Photo prise dans le viseur : on garde la zone de l'ovale de cadrage (`preview` et `oval` en points). */
+  const captureFromCamera = (camera: CameraView | null, preview: Size, oval: { rx: number; ry: number }) =>
     run(async () => {
       if (!camera) return null;
       const photo = await camera.takePictureAsync({ quality: 0.9 });
       if (!photo) return null;
-      return { uri: photo.uri, width: photo.width, height: photo.height };
+      return { uri: photo.uri, width: photo.width, height: photo.height, region: ovalRegion(photo, preview, oval) };
     }, fr.selfie.captureFailed);
 
   return { pickFromGallery, captureFromCamera, busy, error };

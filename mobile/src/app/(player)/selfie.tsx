@@ -1,13 +1,14 @@
 import Feather from '@expo/vector-icons/Feather';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import type { CameraType } from 'expo-camera';
+import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { type LayoutChangeEvent, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CircleIconButton } from '@/components/hero/CircleIconButton';
-import { Button, Screen } from '@/components/ui';
+import { FaceOvalMask, faceOval } from '@/components/hero/FaceOvalMask';
+import { HeroPortrait } from '@/components/hero/HeroPortrait';
+import { Button } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { useHeroPhoto } from '@/hooks/useHeroPhoto';
 import { useTheme } from '@/hooks/useTheme';
@@ -16,294 +17,329 @@ import { fr } from '@/i18n/fr';
 import { updateMe } from '@/services/auth';
 import { apiUpload } from '@/services/client';
 import { updateHeroFace } from '@/services/play';
-import { fonts, radius, spacing, touchTarget, typography } from '@/theme';
+import { fonts, radius, spacing, touchTarget } from '@/theme';
 
-const FRAME_HEIGHT = 300;
-const GUIDE_SIZE = 180;
+type Step = 'portrait' | 'camera';
+type Source = 'camera' | 'gallery';
 
-// Selfie du héros : profil (avatarUrl) par défaut, ou photo propre à une histoire
-// (heroFaceUrl) quand l'écran reçoit un storyId (ouvert depuis le rond du héros en jeu).
+const PORTRAIT_SIZE = 248;
+
+/**
+ * Portrait du héros. La permission caméra n'est demandée qu'au moment où le joueur touche
+ * « Prendre un selfie », jamais à l'ouverture ; la galerie reste proposée dans tous les cas.
+ * Avec `storyId`, la photo ne vaut que pour cette histoire (PATCH /play/:storyId/hero).
+ */
 export default function SelfieScreen() {
   const { storyId } = useLocalSearchParams<{ storyId?: string }>();
   const forStory = Boolean(storyId);
   const { colors } = useTheme();
-  const { setUser } = useAuth();
+  const { user, setUser } = useAuth();
+  const insets = useSafeAreaInsets();
 
-  // La vérification ne déclenche jamais la demande système : seul un appui explicite le fait.
+  // Lecture seule de l'état de la permission : aucune demande système ici.
   const [permission, requestPermission] = useCameraPermissions();
+  const [step, setStep] = useState<Step>('portrait');
+  const [source, setSource] = useState<Source>('camera');
   const [facing, setFacing] = useState<CameraType>('front');
-  const [cameraReady, setCameraReady] = useState(false);
   const [cameraUnavailable, setCameraUnavailable] = useState(false);
+  const [viewfinder, setViewfinder] = useState({ width: 0, height: 0 });
   const cameraRef = useRef<CameraView>(null);
 
-  const { pickFromGallery, captureFromCamera, busy: photoBusy, error: photoError } = useHeroPhoto();
-
+  const { pickFromGallery, captureFromCamera, busy, error: photoError } = useHeroPhoto();
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const cameraActive = Boolean(permission?.granted) && !cameraUnavailable;
-  const busy = photoBusy || saving;
+  const blocked = permission !== null && !permission.granted && !permission.canAskAgain;
+  const error = saveError ?? photoError;
 
-  const onPickGallery = async () => {
+  const openCamera = async () => {
+    if (permission?.granted) {
+      setStep('camera');
+      return;
+    }
+    const answer = await requestPermission();
+    if (answer.granted) setStep('camera');
+  };
+
+  const chooseFromGallery = async () => {
     const uri = await pickFromGallery();
-    if (uri) setPhotoUri(uri);
+    if (!uri) return;
+    setPhotoUri(uri);
+    setSource('gallery');
+    setStep('portrait');
   };
 
-  const onCapture = async () => {
-    const uri = await captureFromCamera(cameraRef.current);
-    if (uri) setPhotoUri(uri);
+  const shoot = async () => {
+    const uri = await captureFromCamera(cameraRef.current, viewfinder, faceOval(viewfinder.width, viewfinder.height));
+    if (!uri) return;
+    setPhotoUri(uri);
+    setSource('camera');
+    setStep('portrait');
   };
 
-  const toggleFacing = () => {
-    setCameraReady(false);
-    setFacing((current) => (current === 'front' ? 'back' : 'front'));
+  const retake = () => {
+    if (source === 'camera') setStep('camera');
+    else chooseFromGallery();
   };
 
-  const onSave = async () => {
+  const save = async () => {
     if (!photoUri) return;
     setSaving(true);
     setSaveError(null);
     try {
       const { url } = await apiUpload<{ url: string }>('/uploads', photoUri);
-      if (forStory && storyId) {
-        await updateHeroFace(storyId, url);
-      } else {
-        setUser(await updateMe({ avatarUrl: url }));
-      }
+      if (storyId) await updateHeroFace(storyId, url);
+      else setUser(await updateMe({ avatarUrl: url }));
       router.back();
-    } catch (error) {
-      setSaveError(errorMessage(error));
+    } catch (err) {
+      setSaveError(errorMessage(err));
     } finally {
       setSaving(false);
     }
   };
 
-  const renderFrameContent = () => {
-    if (permission === null) {
-      return <ActivityIndicator color={colors.accent} accessibilityLabel={fr.common.loading} />;
-    }
-
-    if (!permission.granted) {
-      return (
-        <View style={styles.permissionBox}>
-          <Feather name="camera-off" size={40} color={colors.textMuted} />
-          <Text style={[typography.body, styles.permissionText, { color: colors.textSoft }]}>
-            {permission.canAskAgain ? fr.selfie.permissionExplain : fr.selfie.permissionDeniedExplain}
-          </Text>
-          {permission.canAskAgain ? (
-            <Button label={fr.selfie.takeSelfie} onPress={() => requestPermission()} />
-          ) : (
-            <Button label={fr.selfie.openSettings} onPress={() => Linking.openSettings()} />
-          )}
-        </View>
-      );
-    }
-
-    if (cameraUnavailable) {
-      return (
-        <View style={styles.permissionBox}>
-          <Feather name="camera-off" size={40} color={colors.textMuted} />
-          <Text style={[typography.body, styles.permissionText, { color: colors.textSoft }]}>
-            {fr.selfie.cameraUnavailable}
-          </Text>
-        </View>
-      );
-    }
-
+  if (step === 'camera') {
+    const oval = faceOval(viewfinder.width, viewfinder.height);
     return (
-      <>
+      <View style={styles.viewfinder} onLayout={(event: LayoutChangeEvent) => setViewfinder(event.nativeEvent.layout)}>
         <CameraView
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
           facing={facing}
-          onCameraReady={() => setCameraReady(true)}
-          onMountError={() => setCameraUnavailable(true)}
+          mirror={facing === 'front'}
+          onMountError={() => {
+            setCameraUnavailable(true);
+            setStep('portrait');
+          }}
         />
-        <View pointerEvents="none" style={[styles.guide, { borderColor: colors.accent }]} />
-        <View style={[styles.facingBadge, { backgroundColor: colors.background }]}>
-          <Text style={[styles.facingBadgeText, { color: colors.textMuted }]}>
-            {facing === 'front' ? fr.selfie.frontLabel : fr.selfie.backLabel}
-          </Text>
+        {viewfinder.width > 0 ? (
+          <>
+            <FaceOvalMask width={viewfinder.width} height={viewfinder.height} color={colors.accent} />
+            <Text style={[styles.placeFace, { top: oval.cy - oval.ry - 52 }]} accessibilityRole="header">
+              {fr.selfie.placeFace}
+            </Text>
+            <Text style={[styles.lightHint, { top: oval.cy + oval.ry + 20 }]}>{fr.selfie.lightHint}</Text>
+          </>
+        ) : null}
+
+        <Pressable
+          onPress={() => setStep('portrait')}
+          accessibilityRole="button"
+          accessibilityLabel={fr.selfie.closeCamera}
+          style={[styles.closeButton, { top: insets.top + 12 }]}
+        >
+          <Feather name="x" size={22} color={CAMERA_TEXT} />
+        </Pressable>
+
+        <View style={[styles.controls, { bottom: insets.bottom + 28 }]}>
+          <CameraControl icon="image" label={fr.selfie.galleryShort} onPress={chooseFromGallery} disabled={busy} />
+          <Pressable
+            onPress={shoot}
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel={fr.selfie.shutter}
+            style={({ pressed }) => [styles.shutter, { borderColor: colors.accent, opacity: pressed || busy ? 0.7 : 1 }]}
+          >
+            <View style={[styles.shutterInner, { backgroundColor: colors.accent }]} />
+          </Pressable>
+          <CameraControl
+            icon="refresh-cw"
+            label={fr.selfie.flip}
+            onPress={() => setFacing((current) => (current === 'front' ? 'back' : 'front'))}
+            disabled={busy}
+          />
         </View>
-      </>
+      </View>
     );
-  };
+  }
 
   return (
-    <Screen scroll>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel={fr.common.back}
-          style={[styles.iconButton, { backgroundColor: colors.surfaceAlt }]}
-        >
-          <Feather name="arrow-left" size={20} color={colors.text} />
-        </Pressable>
-        <Text accessibilityRole="header" style={[typography.heading, { color: colors.text }]}>
-          {forStory ? fr.selfie.titleForStory : fr.selfie.title}
-        </Text>
-      </View>
+    <SafeAreaView edges={['top', 'bottom']} style={[styles.root, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={fr.selfie.back}
+            style={[styles.backButton, { backgroundColor: colors.surface }]}
+          >
+            <Feather name="arrow-left" size={22} color={colors.text} />
+          </Pressable>
+          <Text style={[styles.title, { color: colors.text }]} accessibilityRole="header">
+            {forStory ? fr.selfie.titleForStory : fr.selfie.title}
+          </Text>
+        </View>
 
-      <Text style={[typography.body, { color: colors.textMuted }]}>
-        {forStory ? fr.selfie.introForStory : fr.selfie.intro}
-      </Text>
+        <View style={styles.portrait}>
+          <HeroPortrait
+            size={PORTRAIT_SIZE}
+            photoUri={photoUri}
+            blocked={!photoUri && blocked}
+            accessibilityLabel={photoUri ? fr.selfie.portraitPhoto : fr.selfie.portraitEmpty}
+          />
+          {user ? <Text style={[styles.heroName, { color: colors.textMuted }]}>{user.displayName}</Text> : null}
+        </View>
 
-      {photoUri ? (
-        <>
-          <View style={[styles.frame, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
-            <Image
-              source={photoUri}
-              style={[styles.previewImage, { borderColor: colors.accent }]}
-              contentFit="cover"
-              accessibilityLabel={fr.selfie.previewAlt}
-            />
+        {photoUri ? (
+          <View style={styles.previewRow}>
+            <Image source={{ uri: photoUri }} style={[styles.previewFace, { borderColor: colors.accent }]} contentFit="cover" />
+            <Text style={[styles.previewCaption, { color: colors.textMuted }]}>{fr.selfie.previewCaption}</Text>
           </View>
-
-          <View style={[styles.previewCard, { backgroundColor: colors.surface }]}>
-            <View style={[styles.previewCardIcon, { borderColor: colors.accent, backgroundColor: colors.surfaceAlt }]}>
-              <Feather name="user" size={26} color={colors.accent} />
-            </View>
-            <View style={styles.previewCardText}>
-              <Text style={[typography.bodyStrong, { color: colors.text }]}>{fr.selfie.previewCardTitle}</Text>
-              <Text style={[typography.caption, { color: colors.textMuted }]}>{fr.selfie.previewCardBody}</Text>
-            </View>
-          </View>
-
-          {saveError ? (
-            <Text accessibilityLiveRegion="polite" style={[typography.label, { color: colors.danger }]}>
-              {saveError}
+        ) : (
+          <View style={styles.message}>
+            <Text style={[styles.heading, { color: colors.text }]}>
+              {blocked ? fr.selfie.blockedTitle : cameraUnavailable ? fr.selfie.unavailableTitle : fr.selfie.heading}
             </Text>
-          ) : null}
-
-          <View style={styles.actions}>
-            <Button label={forStory ? fr.selfie.saveForStory : fr.selfie.save} onPress={onSave} loading={saving} />
-            <Button
-              label={fr.selfie.retake}
-              variant="ghost"
-              onPress={() => {
-                setCameraReady(false);
-                setPhotoUri(null);
-              }}
-              disabled={saving}
-            />
-          </View>
-        </>
-      ) : (
-        <>
-          <View style={[styles.frame, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
-            {renderFrameContent()}
-          </View>
-
-          {photoError ? (
-            <Text accessibilityLiveRegion="polite" style={[typography.label, { color: colors.danger }]}>
-              {photoError}
+            <Text style={[styles.body, { color: colors.textMuted }]}>
+              {blocked
+                ? fr.selfie.blockedBody
+                : cameraUnavailable
+                  ? fr.selfie.unavailableBody
+                  : forStory
+                    ? fr.selfie.bodyForStory
+                    : fr.selfie.body}
             </Text>
-          ) : null}
-
-          <View style={styles.controlsRow}>
-            <CircleIconButton
-              icon="image"
-              accessibilityLabel={fr.selfie.galleryButton}
-              onPress={onPickGallery}
-              disabled={busy}
-            />
-            {cameraActive ? (
-              <>
-                <Pressable
-                  onPress={onCapture}
-                  disabled={!cameraReady || busy}
-                  accessibilityRole="button"
-                  accessibilityLabel={fr.selfie.shutterButton}
-                  style={({ pressed }) => [
-                    styles.shutter,
-                    {
-                      backgroundColor: colors.primary,
-                      borderColor: colors.text,
-                      opacity: !cameraReady || busy ? 0.5 : pressed ? 0.8 : 1,
-                    },
-                  ]}
-                />
-                <CircleIconButton
-                  icon="refresh-cw"
-                  accessibilityLabel={fr.selfie.flipButton}
-                  onPress={toggleFacing}
-                  disabled={busy}
-                />
-              </>
-            ) : null}
           </View>
-        </>
-      )}
-    </Screen>
+        )}
+
+        {error ? (
+          <Text style={[styles.error, { color: colors.danger }]} accessibilityLiveRegion="polite">
+            {error}
+          </Text>
+        ) : null}
+
+        <View style={styles.actions}>
+          {photoUri ? (
+            <>
+              <Button label={fr.selfie.keep} onPress={save} loading={saving} disabled={busy} />
+              <Button
+                label={source === 'camera' ? fr.selfie.retakeCamera : fr.selfie.retakeGallery}
+                variant="ghost"
+                onPress={retake}
+                disabled={saving || busy}
+              />
+            </>
+          ) : (
+            <>
+              {blocked ? (
+                <Button label={fr.selfie.openSettings} onPress={() => Linking.openSettings()} />
+              ) : cameraUnavailable ? null : (
+                <Button label={fr.selfie.takeSelfie} icon="camera" onPress={openCamera} disabled={busy} />
+              )}
+              <Button
+                label={fr.selfie.gallery}
+                icon="image"
+                variant={blocked || cameraUnavailable ? 'primary' : 'secondary'}
+                onPress={chooseFromGallery}
+                loading={busy}
+              />
+              {!blocked && !cameraUnavailable && !permission?.granted ? (
+                <Text style={[styles.note, { color: colors.textMuted }]}>{fr.selfie.permissionNote}</Text>
+              ) : null}
+            </>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
+type ControlProps = {
+  icon: 'image' | 'refresh-cw';
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+};
+
+/** Bouton rond du viseur, avec son libellé dessous (jamais une icône seule). */
+function CameraControl({ icon, label, onPress, disabled }: ControlProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.control, { opacity: pressed || disabled ? 0.6 : 1 }]}
+    >
+      <View style={styles.controlCircle}>
+        <Feather name={icon} size={22} color={CAMERA_TEXT} />
+      </View>
+      <Text style={styles.controlLabel}>{label}</Text>
+    </Pressable>
+  );
+}
+
+// Le viseur reste sombre quel que soit le thème : c'est une vue caméra.
+const CAMERA_TEXT = '#F2EDE3';
+const CAMERA_SURFACE = 'rgba(33, 30, 41, 0.9)';
+
 const styles = StyleSheet.create({
+  root: { flex: 1 },
+  content: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.md, paddingBottom: spacing.xl },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  iconButton: {
+  backButton: { width: touchTarget, height: touchTarget, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  title: { fontFamily: fonts.display, fontSize: 26, lineHeight: 30 },
+  portrait: { alignItems: 'center', marginTop: spacing.xl, gap: 14 },
+  heroName: { fontFamily: fonts.display, fontSize: 22, lineHeight: 26 },
+  message: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg },
+  heading: { fontFamily: fonts.display, fontSize: 30, lineHeight: 33, textAlign: 'center' },
+  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, textAlign: 'center', maxWidth: 320 },
+  previewRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: spacing.lg },
+  previewFace: { width: 44, height: 44, borderRadius: 22, borderWidth: 2 },
+  previewCaption: { flex: 1, fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
+  error: { fontFamily: fonts.bodySemiBold, fontSize: 14, textAlign: 'center', marginTop: spacing.md },
+  actions: { marginTop: 'auto', paddingTop: spacing.xl, gap: 10 },
+  note: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 4 },
+  viewfinder: { flex: 1, backgroundColor: '#000' },
+  placeFace: {
+    position: 'absolute',
+    left: spacing.xl,
+    right: spacing.xl,
+    textAlign: 'center',
+    fontFamily: fonts.bodyBold,
+    fontSize: 19,
+    color: CAMERA_TEXT,
+  },
+  lightHint: {
+    position: 'absolute',
+    left: spacing.xl,
+    right: spacing.xl,
+    textAlign: 'center',
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: '#D8D0C4',
+  },
+  closeButton: {
+    position: 'absolute',
+    left: spacing.lg,
     width: touchTarget,
     height: touchTarget,
     borderRadius: radius.md,
+    backgroundColor: CAMERA_SURFACE,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  frame: {
-    height: FRAME_HEIGHT,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  guide: {
+  controls: {
     position: 'absolute',
-    width: GUIDE_SIZE,
-    height: GUIDE_SIZE,
-    borderRadius: GUIDE_SIZE / 2,
-    borderWidth: 3,
-    borderStyle: 'dashed',
-  },
-  facingBadge: {
-    position: 'absolute',
-    top: 14,
-    left: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radius.sm,
-  },
-  facingBadgeText: { fontFamily: fonts.bodyBold, fontSize: 12 },
-  permissionBox: { alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.xl },
-  permissionText: { textAlign: 'center' },
-  previewImage: {
-    width: GUIDE_SIZE,
-    height: GUIDE_SIZE,
-    borderRadius: GUIDE_SIZE / 2,
-    borderWidth: 3,
-  },
-  previewCard: {
+    left: spacing.xl,
+    right: spacing.xl,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.lg,
-    borderRadius: radius.xl,
+    justifyContent: 'space-between',
   },
-  previewCardIcon: {
+  control: { minWidth: 76, alignItems: 'center', gap: 6 },
+  controlCircle: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    borderWidth: 2,
+    backgroundColor: CAMERA_SURFACE,
+    borderWidth: 1,
+    borderColor: '#3A3546',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  previewCardText: { flex: 1, gap: 2 },
-  controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xxl },
-  shutter: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    borderWidth: 4,
-  },
-  actions: { gap: spacing.sm },
+  controlLabel: { fontFamily: fonts.bodySemiBold, fontSize: 13, color: CAMERA_TEXT },
+  shutter: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, padding: 5 },
+  shutterInner: { flex: 1, borderRadius: 40 },
 });

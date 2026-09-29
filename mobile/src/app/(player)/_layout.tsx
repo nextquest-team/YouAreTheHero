@@ -11,7 +11,7 @@ export default function PlayerLayout() {
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="story/[id]" />
       <Stack.Screen name="play/[storyId]" options={{ gestureEnabled: false }} />
-      <Stack.Screen name="selfie" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="selfie" options={{ presentation: 'fullScreenModal' }} />
     </Stack>
   );
 }
