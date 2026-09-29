@@ -1,6 +1,7 @@
 import Feather from '@expo/vector-icons/Feather';
 import { Image } from 'expo-image';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { AccessibilityInfo, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Hatch } from '@/components/common/Hatch';
@@ -25,7 +26,6 @@ type Props = {
 
 // Au-delà, une case par PV deviendrait illisible : on revient à 10 cases proportionnelles.
 const MAX_SEGMENTS = 20;
-const JOURNAL_LENGTH = 6;
 
 /** « Tu fais 5, Ennemi 3 : Ennemi perd 2 PV » → l'action en italique, l'issue en capitales. */
 function splitTurn(line: string) {
@@ -47,13 +47,22 @@ export function CombatScreen({ game, busy, error, onAttack, onUse, onQuit }: Pro
   const hpStat = game.stats.find((stat) => stat.id === game.hpStatId);
   const heroStats = game.stats.filter((stat) => stat.type === 'number' && stat.id !== game.hpStatId);
   const usable = game.inventory.filter((item) => item.usable);
-  const journal = combat.log.slice(-JOURNAL_LENGTH).reverse();
+  const journal = [...combat.log].reverse();
+  const latestTurn = combat.log.at(-1);
+
+  // À chaque assaut : retour en haut du journal (le plus récent) et annonce à VoiceOver,
+  // puisque le journal ne se relit plus d'un bloc.
+  const journalRef = useRef<ScrollView>(null);
+  const turns = useRef(combat.log.length);
+  useEffect(() => {
+    if (combat.log.length === turns.current) return;
+    turns.current = combat.log.length;
+    journalRef.current?.scrollTo({ y: 0, animated: true });
+    if (latestTurn) AccessibilityInfo.announceForAccessibility(latestTurn);
+  }, [combat.log.length, latestTurn]);
 
   return (
-    <ScrollView
-      style={{ backgroundColor: gameColors.ink }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 32 }]}
-    >
+    <View style={[styles.root, { backgroundColor: gameColors.ink, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
       <View style={styles.top}>
         <Pressable onPress={onQuit} accessibilityRole="button" accessibilityLabel={fr.game.quit} style={styles.iconButton}>
           <Feather name="chevron-left" size={24} color={gameColors.paper} />
@@ -128,31 +137,37 @@ export function CombatScreen({ game, busy, error, onAttack, onUse, onQuit }: Pro
         />
       </View>
 
-      {journal.length > 0 ? (
-        <View
-          accessible
-          accessibilityLiveRegion="polite"
-          accessibilityLabel={`${fr.game.combatLog} : ${journal.join('. ')}`}
-          style={styles.journal}
-        >
-          <Text style={[styles.mono, { color: gameColors.paperMuted }]}>{fr.game.journal}</Text>
-          {journal.map((line, index) => {
-            const { action, result } = splitTurn(line);
-            const latest = index === 0;
-            return (
-              <View key={combat.log.length - index} style={[styles.entry, index > 0 && styles.entryRule]}>
-                <Text style={[styles.action, { color: latest ? gameColors.paper : gameColors.paperMuted }]}>{action}</Text>
-                {result ? (
-                  // Le dernier assaut est marqué d'une flèche, pas seulement de sa couleur
-                  <Text style={[styles.result, { color: latest ? gameColors.accentOnInk : gameColors.paperMuted }]}>
-                    {latest ? `▸ ${result}` : result}
-                  </Text>
-                ) : null}
-              </View>
-            );
-          })}
-        </View>
-      ) : null}
+      {/* Hauteur fixe : le journal prend la place restante et défile à l'intérieur,
+          pour que « Frapper » reste au même endroit d'un assaut à l'autre */}
+      <View style={styles.journal}>
+        {journal.length > 0 ? (
+          <>
+            <Text style={[styles.mono, { color: gameColors.paperMuted }]}>{fr.game.journal}</Text>
+            <ScrollView ref={journalRef} accessibilityLabel={fr.game.combatLog} contentContainerStyle={styles.journalContent}>
+              {journal.map((line, index) => {
+                const { action, result } = splitTurn(line);
+                const latest = index === 0;
+                return (
+                  <View
+                    key={combat.log.length - index}
+                    accessible
+                    accessibilityLabel={line}
+                    style={[styles.entry, index > 0 && styles.entryRule]}
+                  >
+                    <Text style={[styles.action, { color: latest ? gameColors.paper : gameColors.paperMuted }]}>{action}</Text>
+                    {result ? (
+                      // Le dernier assaut est marqué d'une flèche, pas seulement de sa couleur
+                      <Text style={[styles.result, { color: latest ? gameColors.accentOnInk : gameColors.paperMuted }]}>
+                        {latest ? `▸ ${result}` : result}
+                      </Text>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </>
+        ) : null}
+      </View>
 
       {error ? (
         <Text accessibilityLiveRegion="polite" style={[styles.error, { color: gameColors.accentOnInk }]}>
@@ -189,12 +204,12 @@ export function CombatScreen({ game, busy, error, onAttack, onUse, onQuit }: Pro
           <Text style={[styles.secondaryText, { color: gameColors.paper }]}>{`${fr.game.use} ${item.name} · ×${item.qty}`}</Text>
         </Pressable>
       ))}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { flexGrow: 1, paddingHorizontal: 20, gap: 18 },
+  root: { flex: 1, paddingHorizontal: 20, gap: 18 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: -10 },
   iconButton: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center' },
   grow: { flex: 1 },
@@ -211,7 +226,8 @@ const styles = StyleSheet.create({
   versusText: { fontFamily: fonts.displayItalic, fontSize: 28, lineHeight: 32 },
   heroCard: { borderWidth: hairline, borderRadius: radius.lg, padding: 16, gap: 14 },
   heroName: { fontFamily: fonts.display, fontSize: 24, lineHeight: 28 },
-  journal: { gap: 10 },
+  journal: { flex: 1, minHeight: 0, gap: 6 },
+  journalContent: { paddingBottom: 8 },
   entry: { gap: 2, paddingTop: 10 },
   entryRule: { borderTopWidth: 1, borderTopColor: 'rgba(243, 235, 219, 0.3)' },
   action: { fontFamily: fonts.bodyItalic, fontSize: 16, lineHeight: 22 },
