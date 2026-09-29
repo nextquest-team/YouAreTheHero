@@ -1,5 +1,13 @@
 import type { SeedStory } from '../seed-data.js';
-import { atLeast, choice, ending, gain, give, has, numberStat, scene, textStat } from './helpers.js';
+import { atLeast, choice, ending, gain, give, has, numberStat, scene, textStat, withBackdrops } from './helpers.js';
+
+// Un décor par lieu, partagé par les scènes qui s'y déroulent.
+const BACKDROPS: Record<string, string[]> = {
+  '/uploads/cuisine-decor-cuisine.jpg': ['cuisine', 'carnet', 'petrin', 'four', 'finRose'],
+  '/uploads/cuisine-decor-marche.jpg': ['marche', 'yann'],
+  '/uploads/cuisine-decor-superette.jpg': ['superette', 'legoff'],
+  '/uploads/cuisine-decor-salle.jpg': ['jury', 'finPremier', 'finPublic', 'finAmies'],
+};
 
 /**
  * Tranche de vie sans combat, 13 scènes et 4 fins toutes heureuses : un concours de gâteaux
@@ -10,7 +18,7 @@ export const kitchenStory: SeedStory = {
   summary:
     "Mamie Rose s'est cassé le poignet la veille du concours de gâteaux de Plouhinec, qu'elle gagne depuis trente ans. C'est à toi de reprendre le tablier, sous ses ordres, depuis le canapé.",
   genre: 'Tranche de vie',
-  coverUrl: null,
+  coverUrl: '/uploads/cuisine-couverture.jpg',
   published: true,
   hasCombat: false,
   stats: [
@@ -26,40 +34,40 @@ export const kitchenStory: SeedStory = {
       key: 'carnet',
       name: 'Carnet de recettes',
       description: "Couverture en toile cirée, pages collées de beurre. L'écriture de Rose penche à gauche.",
-      imageUrl: null,
+      imageUrl: '/uploads/cuisine-objet-carnet.jpg',
       useEffects: null,
     },
     {
       key: 'beurre',
       name: 'Beurre demi-sel',
       description: 'Une motte généreuse. Rose dit que tout le secret est là.',
-      imageUrl: null,
+      imageUrl: '/uploads/cuisine-objet-beurre.jpg',
       useEffects: null,
     },
     {
       key: 'cidre',
       name: 'Bouteille de cidre',
       description: 'Offerte par Yann, de la ferme de Kerbastard. Brut, évidemment.',
-      imageUrl: null,
+      imageUrl: '/uploads/cuisine-objet-cidre.jpg',
       useEffects: null,
     },
     {
       key: 'astuce',
       name: 'Astuce de Mme Le Goff',
       description: "Griffonnée sur un ticket de caisse : « Une pincée de fleur de sel sur le dessus, juste avant d'enfourner. »",
-      imageUrl: null,
+      imageUrl: '/uploads/cuisine-objet-astuce.jpg',
       useEffects: [gain('saveur', 1)],
     },
     {
       key: 'caramel',
       name: 'Bonbon au caramel',
       description: 'Rose en cache partout. Un seul suffit à te calmer.',
-      imageUrl: null,
+      imageUrl: '/uploads/cuisine-objet-caramel.jpg',
       useEffects: [gain('calme', 1)],
     },
   ],
   startSceneKey: 'cuisine',
-  scenes: [
+  scenes: withBackdrops([
     scene(
       'cuisine',
       'La cuisine de Rose',
@@ -130,7 +138,7 @@ export const kitchenStory: SeedStory = {
       'Deux chaises au premier rang',
       "Pendant que le jury délibère, tu apportes une part à Mme Le Goff, avec la fleur de sel sur le dessus. Elle goûte, reconnaît son astuce, et éclate de rire. Puis elle traverse la salle et s'assoit à côté de Rose. Personne n'entend ce qu'elles se disent. Mais le lendemain, elles prennent le café ensemble pour la première fois en trente ans.",
     ),
-  ],
+  ], BACKDROPS),
   choices: [
     choice('cuisine', 'carnet', 'Lire le carnet de Rose'),
     choice('cuisine', 'marche', 'Filer au marché sans perdre de temps'),

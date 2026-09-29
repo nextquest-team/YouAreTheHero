@@ -1,5 +1,15 @@
 import type { SeedStory } from '../seed-data.js';
-import { atLeast, choice, ending, gain, give, has, numberStat, scene, textStat } from './helpers.js';
+import { atLeast, choice, ending, gain, give, has, numberStat, scene, textStat, withBackdrops } from './helpers.js';
+
+// Un décor par lieu, partagé par les scènes qui s'y déroulent.
+const BACKDROPS: Record<string, string[]> = {
+  '/uploads/lepic-decor-librairie.jpg': ['librairie', 'confidence', 'reponse', 'fuite', 'finVitrine', 'finRester'],
+  '/uploads/lepic-decor-mansarde.jpg': ['atelier', 'rendezvous', 'encoreLettres', 'finTiroir', 'finSilence', 'finLettres'],
+  '/uploads/lepic-decor-bal.jpg': ['bal', 'danse', 'aveu'],
+  '/uploads/lepic-decor-theatre.jpg': ['theatre'],
+  '/uploads/lepic-decor-gare.jpg': ['gare', 'finQuai', 'finPromesse', 'finMarseille'],
+  '/uploads/lepic-decor-escaliers.jpg': ['escaliers'],
+};
 
 /**
  * Romance sans combat, 21 scènes et 6 fins : une correspondance anonyme cachée dans les livres
@@ -10,7 +20,7 @@ export const lepicStory: SeedStory = {
   summary:
     "Paris, 1925. Une lettre tombe d'un vieux recueil de Verlaine : « À qui trouvera ce livre ». Répondras-tu à cette voix sans visage, cachée quelque part entre les rayons d'une librairie de Montmartre ?",
   genre: 'Romance',
-  coverUrl: null,
+  coverUrl: '/uploads/lepic-couverture.jpg',
   published: true,
   hasCombat: false,
   stats: [
@@ -26,26 +36,26 @@ export const lepicStory: SeedStory = {
       key: 'lettre',
       name: 'Lettre anonyme',
       description: "Une écriture penchée, pressée, comme si on avait eu peur de changer d'avis.",
-      imageUrl: null,
+      imageUrl: '/uploads/lepic-objet-lettre.jpg',
       useEffects: null,
     },
     {
       key: 'billet',
       name: 'Billet de théâtre',
       description: "Théâtre de l'Atelier, samedi soir, fauteuil 14. Offert par Camille.",
-      imageUrl: null,
+      imageUrl: '/uploads/lepic-objet-billet.jpg',
       useEffects: null,
     },
     {
       key: 'violette',
       name: 'Violette séchée',
       description: 'Glissée dans le pli de la dernière lettre. La respirer donne du courage.',
-      imageUrl: null,
+      imageUrl: '/uploads/lepic-objet-violette.jpg',
       useEffects: [gain('audace', 1)],
     },
   ],
   startSceneKey: 'librairie',
-  scenes: [
+  scenes: withBackdrops([
     scene(
       'librairie',
       'Au Chat qui lit',
@@ -154,7 +164,7 @@ export const lepicStory: SeedStory = {
       'La promesse du mois de mai',
       "Le train part. Camille se penche à la fenêtre et te lance sa violette, que tu rattrapes de justesse. Tu tiens ta promesse au mois de mai : un billet aller simple pour Marseille, et ton carton à dessins sous le bras.",
     ),
-  ],
+  ], BACKDROPS),
   choices: [
     choice('librairie', 'confidence', "Ouvrir l'enveloppe devant Camille", { effects: [give('lettre'), gain('complicite', 1)] }),
     choice('librairie', 'atelier', "Glisser l'enveloppe dans ta poche et filer", { effects: [give('lettre')] }),

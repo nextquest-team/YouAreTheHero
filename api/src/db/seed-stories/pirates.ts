@@ -1,5 +1,16 @@
 import type { SeedStory } from '../seed-data.js';
-import { atLeast, choice, ending, fight, gain, give, has, numberStat, scene, textStat } from './helpers.js';
+import { atLeast, choice, ending, fight, gain, give, has, numberStat, scene, textStat, withBackdrops } from './helpers.js';
+
+// Un décor par lieu, partagé par les scènes qui s'y déroulent.
+const BACKDROPS: Record<string, string[]> = {
+  '/uploads/pirates-decor-cale.jpg': ['cale', 'cachette', 'mutinerie'],
+  '/uploads/pirates-decor-pont.jpg': ['pont', 'combatMalgrin', 'respect', 'capitaine', 'victoire', 'finCapitaine'],
+  '/uploads/pirates-decor-mer.jpg': ['navire', 'finRetour'],
+  '/uploads/pirates-decor-tempete.jpg': ['tempete', 'kraken', 'vigie'],
+  '/uploads/pirates-decor-plage.jpg': ['naufrage', 'ile', 'finAbandon', 'finExplorateur'],
+  '/uploads/pirates-decor-jungle.jpg': ['raccourci', 'tresor'],
+  '/uploads/pirates-decor-grotte.jpg': ['grotte', 'duel', 'finRecoins'],
+};
 
 /**
  * Longue aventure avec combats, 23 scènes et 5 fins. Deux défaites sur trois ne sont pas fatales
@@ -11,7 +22,7 @@ export const piratesStory: SeedStory = {
   summary:
     "1721. Caché dans la cale d'un navire marchand, tu rêvais d'aventure. Puis le Corbeau Noir a hissé son pavillon à l'horizon, et son capitaine cherche quelqu'un qui sache lire une carte au trésor.",
   genre: 'Aventure',
-  coverUrl: null,
+  coverUrl: '/uploads/pirates-couverture.jpg',
   published: true,
   hasCombat: true,
   stats: [
@@ -27,28 +38,28 @@ export const piratesStory: SeedStory = {
       key: 'rhum',
       name: 'Flasque de rhum',
       description: 'Ça brûle la gorge et ça fait oublier les plaies. Pour un temps.',
-      imageUrl: null,
+      imageUrl: '/uploads/pirates-objet-rhum.jpg',
       useEffects: [gain('pv', 6)],
     },
     {
       key: 'sabre',
       name: 'Sabre ébréché',
       description: "Ramassé sur le pont de la Sterne. Il a connu des jours meilleurs, toi aussi.",
-      imageUrl: null,
+      imageUrl: '/uploads/pirates-objet-sabre.jpg',
       useEffects: null,
     },
     {
       key: 'carte',
       name: 'Copie de la carte',
       description: "Recopiée à la bougie, en cachette. L'île aux Encres, et une croix que Corbeau n'a pas vue.",
-      imageUrl: null,
+      imageUrl: '/uploads/pirates-objet-carte.jpg',
       useEffects: null,
     },
     {
       key: 'biscuit',
       name: 'Biscuit de mer',
       description: 'Dur comme du bois, mais ça tient au corps.',
-      imageUrl: null,
+      imageUrl: '/uploads/pirates-objet-biscuit.jpg',
       useEffects: [gain('pv', 3)],
     },
   ],
@@ -56,7 +67,7 @@ export const piratesStory: SeedStory = {
     {
       key: 'malgrin',
       name: 'Bosco Malgrin',
-      imageUrl: null,
+      imageUrl: '/uploads/pirates-ennemi-malgrin.jpg',
       attack: 4,
       hp: 8,
       shield: 0,
@@ -66,7 +77,7 @@ export const piratesStory: SeedStory = {
     {
       key: 'kraken',
       name: 'Tentacule du kraken',
-      imageUrl: null,
+      imageUrl: '/uploads/pirates-ennemi-kraken.jpg',
       attack: 5,
       hp: 10,
       shield: 2,
@@ -76,7 +87,7 @@ export const piratesStory: SeedStory = {
     {
       key: 'corbeau',
       name: 'Capitaine Corbeau',
-      imageUrl: null,
+      imageUrl: '/uploads/pirates-ennemi-corbeau.jpg',
       attack: 5,
       hp: 12,
       shield: 2,
@@ -88,7 +99,7 @@ export const piratesStory: SeedStory = {
     },
   ],
   startSceneKey: 'cale',
-  scenes: [
+  scenes: withBackdrops([
     scene(
       'cale',
       'La cale de la Sterne',
@@ -213,7 +224,7 @@ export const piratesStory: SeedStory = {
       "La pièce d'or",
       "Tu recules, les mains levées. Corbeau crache par terre, rengaine et ressort de la grotte en hurlant des ordres. Il repart sans toi. Tu restes des heures à fouiller les recoins, et tu ne trouves qu'une pièce d'or oubliée. Un pêcheur te ramène sur le continent une semaine plus tard. Tu portes la pièce autour du cou pour le reste de ta vie.",
     ),
-  ],
+  ], BACKDROPS),
   choices: [
     choice('cale', 'pont', 'Monter sur le pont'),
     choice('cale', 'cachette', 'Rester dans les tonneaux'),
