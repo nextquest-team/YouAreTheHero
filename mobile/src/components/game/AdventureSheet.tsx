@@ -1,6 +1,6 @@
 import Feather from '@expo/vector-icons/Feather';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { OvalPortrait } from '@/components/hero/OvalPortrait';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,119 +37,123 @@ export function AdventureSheet({ visible, game, storyTitle, canUse, busy, onUse,
   const countLabel = totalQty > 1 ? fr.game.itemCountPlural : fr.game.itemCountSingular;
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.header}>
-            <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={fr.game.backToScene} style={styles.iconButton}>
-              <Feather name="chevron-left" size={24} color={colors.text} />
-            </Pressable>
-            <Text style={[styles.storyTitle, { color: colors.text }]} numberOfLines={1}>
-              {storyTitle}
-            </Text>
-          </View>
-
-          <Text accessibilityRole="header" style={[styles.title, { color: colors.text }]}>
-            {fr.game.sheetTitleStart}
-            <Text style={[styles.titleAccent, { color: colors.accent }]}>{fr.game.sheetTitleAccent}</Text>
-          </Text>
-
-          <View style={styles.hero}>
-            <Pressable
-              onPress={onEditFace}
-              accessibilityRole="button"
-              accessibilityLabel={fr.game.heroFaceButton}
-              style={({ pressed }) => [styles.portrait, { opacity: pressed ? 0.8 : 1 }]}
-            >
-              <OvalPortrait uri={face} width={124} height={156} ringGap={5} ink={colors.text} background={colors.surfaceAlt} />
-              <View style={[styles.selfieTag, { backgroundColor: colors.background, borderColor: colors.borderStrong }]}>
-                <Text style={[styles.selfieText, { color: colors.text }]}>{`[${fr.game.selfieTag}]`}</Text>
-              </View>
-            </Pressable>
-            {user ? <Text style={[styles.heroName, { color: colors.text }]}>{user.displayName}</Text> : null}
-          </View>
-
-          {numberStats.length > 0 ? (
-            <View style={[styles.grid, { borderColor: colors.borderStrong, backgroundColor: colors.surface }]}>
-              {numberStats.map((stat, index) => {
-                const isHp = stat.id === game.hpStatId;
-                const lastInRow = index % COLUMNS === COLUMNS - 1 || index === numberStats.length - 1;
-                return (
-                  <View
-                    key={stat.id}
-                    accessible
-                    accessibilityLabel={`${stat.name} ${stat.value}${stat.max !== null ? ` ${fr.game.outOf} ${stat.max}` : ''}`}
-                    style={[
-                      styles.cell,
-                      { borderColor: colors.borderStrong },
-                      !lastInRow && styles.cellDivider,
-                      index >= COLUMNS && styles.cellTop,
-                    ]}
-                  >
-                    <Text style={[styles.cellLabel, { color: colors.textMuted }]} numberOfLines={1}>
-                      {stat.name}
-                    </Text>
-                    <Text style={[styles.cellValue, { color: isHp ? colors.accent : colors.text }]}>{stat.value}</Text>
-                    {stat.max !== null ? (
-                      <Text style={[styles.cellLabel, { color: colors.textMuted }]}>{`${fr.game.max} ${stat.max}`}</Text>
-                    ) : null}
-                  </View>
-                );
-              })}
-            </View>
-          ) : null}
-
-          {textStats.map((stat) => (
-            <View key={stat.id} accessible style={[styles.textStat, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.cellLabel, { color: colors.textMuted }]}>{stat.name}</Text>
-              <Text style={[styles.textStatValue, { color: colors.text }]}>{String(stat.value)}</Text>
-            </View>
-          ))}
-
-          <View style={styles.bag}>
-            <View style={[styles.bagHeader, { borderBottomColor: colors.borderStrong }]}>
-              <Text accessibilityRole="header" style={[styles.bagTitle, { color: colors.text }]}>
-                {fr.game.bag}
+    // Une Modal s'ouvre dans sa propre fenêtre native, hors du SafeAreaProvider de l'app : sans le
+    // sien, ses marges valent 0 et l'en-tête passe sous la barre d'état.
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
+      <SafeAreaProvider>
+        <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]}>
+          <ScrollView contentContainerStyle={styles.content}>
+            <View style={styles.header}>
+              <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={fr.game.backToScene} style={styles.iconButton}>
+                <Feather name="chevron-left" size={24} color={colors.text} />
+              </Pressable>
+              <Text style={[styles.storyTitle, { color: colors.text }]} numberOfLines={1}>
+                {storyTitle}
               </Text>
-              {totalQty > 0 ? <Text style={[typography.overline, { color: colors.textMuted }]}>{`${totalQty} ${countLabel}`}</Text> : null}
             </View>
 
-            {game.inventory.length === 0 ? (
-              <Text style={[styles.description, { color: colors.textMuted }]}>{fr.game.inventoryEmpty}</Text>
-            ) : (
-              game.inventory.map((item) => (
-                <View key={item.id} style={[styles.item, { borderBottomColor: colors.border }]}>
-                  <View style={styles.itemText} accessible accessibilityLabel={`${item.name}, × ${item.qty}. ${item.description ?? ''}`}>
-                    <View style={styles.itemHead}>
-                      <Text style={[styles.qty, { color: colors.accent }]}>{`×${item.qty}`}</Text>
-                      <Text style={[styles.itemName, { color: colors.text }]}>{item.name}</Text>
-                    </View>
-                    {item.description ? (
-                      <Text style={[styles.description, styles.indent, { color: colors.textMuted }]}>{item.description}</Text>
-                    ) : null}
-                  </View>
-                  {item.usable ? (
-                    <Pressable
-                      onPress={() => onUse(item.id)}
-                      disabled={!canUse || busy}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${fr.game.use} ${item.name}`}
-                      accessibilityState={{ disabled: !canUse || busy, busy }}
-                      style={({ pressed }) => [
-                        styles.use,
-                        { backgroundColor: colors.primary, boxShadow: offsetShadow(colors.accent, 3), opacity: !canUse || busy ? 0.5 : 1 },
-                        pressed && styles.pressed,
+            <Text accessibilityRole="header" style={[styles.title, { color: colors.text }]}>
+              {fr.game.sheetTitleStart}
+              <Text style={[styles.titleAccent, { color: colors.accent }]}>{fr.game.sheetTitleAccent}</Text>
+            </Text>
+
+            <View style={styles.hero}>
+              <Pressable
+                onPress={onEditFace}
+                accessibilityRole="button"
+                accessibilityLabel={fr.game.heroFaceButton}
+                style={({ pressed }) => [styles.portrait, { opacity: pressed ? 0.8 : 1 }]}
+              >
+                <OvalPortrait uri={face} width={124} height={156} ringGap={5} ink={colors.text} background={colors.surfaceAlt} />
+                <View style={[styles.selfieTag, { backgroundColor: colors.background, borderColor: colors.borderStrong }]}>
+                  <Text style={[styles.selfieText, { color: colors.text }]}>{`[${fr.game.selfieTag}]`}</Text>
+                </View>
+              </Pressable>
+              {user ? <Text style={[styles.heroName, { color: colors.text }]}>{user.displayName}</Text> : null}
+            </View>
+
+            {numberStats.length > 0 ? (
+              <View style={[styles.grid, { borderColor: colors.borderStrong, backgroundColor: colors.surface }]}>
+                {numberStats.map((stat, index) => {
+                  const isHp = stat.id === game.hpStatId;
+                  const lastInRow = index % COLUMNS === COLUMNS - 1 || index === numberStats.length - 1;
+                  return (
+                    <View
+                      key={stat.id}
+                      accessible
+                      accessibilityLabel={`${stat.name} ${stat.value}${stat.max !== null ? ` ${fr.game.outOf} ${stat.max}` : ''}`}
+                      style={[
+                        styles.cell,
+                        { borderColor: colors.borderStrong },
+                        !lastInRow && styles.cellDivider,
+                        index >= COLUMNS && styles.cellTop,
                       ]}
                     >
-                      <Text style={[styles.useText, { color: colors.onPrimary }]}>{fr.game.use}</Text>
-                    </Pressable>
-                  ) : null}
-                </View>
-              ))
-            )}
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+                      <Text style={[styles.cellLabel, { color: colors.textMuted }]} numberOfLines={1}>
+                        {stat.name}
+                      </Text>
+                      <Text style={[styles.cellValue, { color: isHp ? colors.accent : colors.text }]}>{stat.value}</Text>
+                      {stat.max !== null ? (
+                        <Text style={[styles.cellLabel, { color: colors.textMuted }]}>{`${fr.game.max} ${stat.max}`}</Text>
+                      ) : null}
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
+
+            {textStats.map((stat) => (
+              <View key={stat.id} accessible style={[styles.textStat, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.cellLabel, { color: colors.textMuted }]}>{stat.name}</Text>
+                <Text style={[styles.textStatValue, { color: colors.text }]}>{String(stat.value)}</Text>
+              </View>
+            ))}
+
+            <View style={styles.bag}>
+              <View style={[styles.bagHeader, { borderBottomColor: colors.borderStrong }]}>
+                <Text accessibilityRole="header" style={[styles.bagTitle, { color: colors.text }]}>
+                  {fr.game.bag}
+                </Text>
+                {totalQty > 0 ? <Text style={[typography.overline, { color: colors.textMuted }]}>{`${totalQty} ${countLabel}`}</Text> : null}
+              </View>
+
+              {game.inventory.length === 0 ? (
+                <Text style={[styles.description, { color: colors.textMuted }]}>{fr.game.inventoryEmpty}</Text>
+              ) : (
+                game.inventory.map((item) => (
+                  <View key={item.id} style={[styles.item, { borderBottomColor: colors.border }]}>
+                    <View style={styles.itemText} accessible accessibilityLabel={`${item.name}, × ${item.qty}. ${item.description ?? ''}`}>
+                      <View style={styles.itemHead}>
+                        <Text style={[styles.qty, { color: colors.accent }]}>{`×${item.qty}`}</Text>
+                        <Text style={[styles.itemName, { color: colors.text }]}>{item.name}</Text>
+                      </View>
+                      {item.description ? (
+                        <Text style={[styles.description, styles.indent, { color: colors.textMuted }]}>{item.description}</Text>
+                      ) : null}
+                    </View>
+                    {item.usable ? (
+                      <Pressable
+                        onPress={() => onUse(item.id)}
+                        disabled={!canUse || busy}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${fr.game.use} ${item.name}`}
+                        accessibilityState={{ disabled: !canUse || busy, busy }}
+                        style={({ pressed }) => [
+                          styles.use,
+                          { backgroundColor: colors.primary, boxShadow: offsetShadow(colors.accent, 3), opacity: !canUse || busy ? 0.5 : 1 },
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <Text style={[styles.useText, { color: colors.onPrimary }]}>{fr.game.use}</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                ))
+              )}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }

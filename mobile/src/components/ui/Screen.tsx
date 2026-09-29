@@ -8,12 +8,13 @@ import { spacing } from '@/theme';
 type Props = {
   children: ReactNode;
   scroll?: boolean;
-  // Les écrans avec une tab bar n'ont pas besoin de la marge du bas
+  // Bords protégés, tous par défaut. Le SafeAreaView natif mesure ce qui recouvre réellement l'écran :
+  // sous une tab bar, la marge du bas vaut 0 ; sur un écran plein, elle évite l'indicateur d'accueil.
   edges?: Edge[];
   contentStyle?: ViewStyle;
 };
 
-export function Screen({ children, scroll = false, edges = ['top'], contentStyle }: Props) {
+export function Screen({ children, scroll = false, edges = ['top', 'bottom', 'left', 'right'], contentStyle }: Props) {
   const { colors } = useTheme();
   const content = [styles.content, contentStyle];
 

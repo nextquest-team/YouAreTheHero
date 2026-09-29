@@ -42,7 +42,7 @@ export default function Login() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Screen scroll edges={['top', 'bottom']} contentStyle={styles.content}>
+      <Screen scroll contentStyle={styles.content}>
         <AuthHeader />
 
         <View style={styles.fields}>
