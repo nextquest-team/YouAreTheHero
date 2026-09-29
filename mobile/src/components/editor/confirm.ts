@@ -3,7 +3,8 @@ import { Alert } from 'react-native';
 import type { RemoveResult } from '@/hooks/useEntityEditor';
 import { fr } from '@/i18n/fr';
 
-type Texts = { deleteTitle: string; inUseTitle: string; inUseIntro: string };
+// inUseTitle et inUseIntro manquent pour un élément que rien ne cite (un choix).
+type Texts = { deleteTitle: string; inUseTitle?: string; inUseIntro?: string };
 
 /**
  * Demande confirmation avant de supprimer un élément de l'histoire. S'il est encore cité
@@ -18,9 +19,9 @@ export function confirmRemove(texts: Texts, name: string, remove: () => Promise<
       onPress: async () => {
         const result = await remove();
         if (result.ok) onRemoved();
-        else if (result.usedIn.length > 0) {
+        else if (result.usedIn.length > 0 && texts.inUseTitle) {
           const lines = result.usedIn.map((usage) => `• ${fr.usageKinds[usage.kind]} : ${usage.label}`).join('\n');
-          Alert.alert(texts.inUseTitle, `${texts.inUseIntro}\n\n${lines}`);
+          Alert.alert(texts.inUseTitle, `${texts.inUseIntro ?? ''}\n\n${lines}`);
         }
       },
     },

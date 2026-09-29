@@ -106,6 +106,12 @@ export default function StoryEditorScreen() {
             detail={count(fr.items, data.items.length)}
             onPress={() => router.push({ pathname: '/editor/[id]/items', params: { id } })}
           />
+          <EditorLink
+            icon="book-open"
+            label={fr.scenes.title}
+            detail={count(fr.scenes, data.scenes.length)}
+            onPress={() => router.push({ pathname: '/editor/[id]/scenes', params: { id } })}
+          />
           {data.hasCombat ? (
             <EditorLink
               icon="shield"
