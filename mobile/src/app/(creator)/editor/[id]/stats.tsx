@@ -1,8 +1,9 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { LoadState } from '@/components/common/LoadState';
+import { confirmRemove } from '@/components/editor/confirm';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { OptionChips } from '@/components/editor/OptionChips';
 import { StatForm } from '@/components/editor/StatForm';
@@ -11,7 +12,7 @@ import { useStoryEditor } from '@/hooks/useMyStories';
 import { useStatEditor } from '@/hooks/useStatEditor';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
-import type { StatDefinition, StatInput, Usage } from '@/types/api';
+import type { StatDefinition, StatInput } from '@/types/api';
 import { fonts, radius, spacing, typography } from '@/theme';
 
 // null : aucun formulaire ouvert ; 'new' : création ; sinon l'id de la stat modifiée.
@@ -30,10 +31,6 @@ function statSummary(stat: StatDefinition): string {
           ? ` · ${fr.stats.max} ${stat.max}`
           : '';
   return `${fr.stats.start} ${stat.defaultValue}${bounds}`;
-}
-
-function usageLines(usedIn: Usage[]): string {
-  return usedIn.map((usage) => `• ${fr.stats.usageKinds[usage.kind]} : ${usage.label}`).join('\n');
 }
 
 // Caractéristiques du héros, et choix de la stat d'attaque et de la stat de PV pour les combats.
@@ -57,20 +54,7 @@ export default function StatsScreen() {
   };
 
   const confirmDelete = (stat: StatDefinition) =>
-    Alert.alert(fr.stats.deleteTitle, `${stat.name}`, [
-      { text: fr.common.cancel, style: 'cancel' },
-      {
-        text: fr.common.delete,
-        style: 'destructive',
-        onPress: async () => {
-          const result = await stats.remove(stat.id);
-          if (result.ok) setEditing(null);
-          else if (result.usedIn.length > 0) {
-            Alert.alert(fr.stats.inUseTitle, `${fr.stats.inUseIntro}\n\n${usageLines(result.usedIn)}`);
-          }
-        },
-      },
-    ]);
+    confirmRemove(fr.stats, stat.name, () => stats.remove(stat.id), () => setEditing(null));
 
   const numberStats = data?.stats.filter((stat) => stat.type === 'number') ?? [];
   const numberOptions = numberStats.map((stat) => ({ value: stat.id, label: stat.name }));

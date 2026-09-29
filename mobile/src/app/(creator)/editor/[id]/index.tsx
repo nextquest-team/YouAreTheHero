@@ -15,8 +15,8 @@ import { fr } from '@/i18n/fr';
 import type { UpdateStoryInput } from '@/types/api';
 import { typography } from '@/theme';
 
-const statCount = (count: number) =>
-  count === 0 ? fr.stats.none : `${count} ${count === 1 ? fr.stats.one : fr.stats.many}`;
+type CountTexts = { none: string; one: string; many: string };
+const count = (texts: CountTexts, n: number) => (n === 0 ? texts.none : `${n} ${n === 1 ? texts.one : texts.many}`);
 
 // Éditeur d'une histoire : infos, couverture, avec ou sans combats, publication et suppression.
 export default function StoryEditorScreen() {
@@ -97,9 +97,29 @@ export default function StoryEditorScreen() {
           <EditorLink
             icon="bar-chart-2"
             label={fr.stats.title}
-            detail={statCount(data.stats.length)}
+            detail={count(fr.stats, data.stats.length)}
             onPress={() => router.push({ pathname: '/editor/[id]/stats', params: { id } })}
           />
+          <EditorLink
+            icon="briefcase"
+            label={fr.items.title}
+            detail={count(fr.items, data.items.length)}
+            onPress={() => router.push({ pathname: '/editor/[id]/items', params: { id } })}
+          />
+          <EditorLink
+            icon="book-open"
+            label={fr.scenes.title}
+            detail={count(fr.scenes, data.scenes.length)}
+            onPress={() => router.push({ pathname: '/editor/[id]/scenes', params: { id } })}
+          />
+          {data.hasCombat ? (
+            <EditorLink
+              icon="shield"
+              label={fr.enemies.title}
+              detail={count(fr.enemies, data.enemies.length)}
+              onPress={() => router.push({ pathname: '/editor/[id]/enemies', params: { id } })}
+            />
+          ) : null}
 
           {editor.busy ? <ActivityIndicator color={colors.accent} accessibilityLabel={fr.common.loading} /> : null}
           {editor.actionError ? (
