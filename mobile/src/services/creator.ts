@@ -1,4 +1,12 @@
-import type { CreateStoryInput, CreatorStory, CreatorStoryFull, PublishResult, UpdateStoryInput } from '@/types/api';
+import type {
+  CreateStoryInput,
+  CreatorStory,
+  CreatorStoryFull,
+  PublishResult,
+  StatDefinition,
+  StatInput,
+  UpdateStoryInput,
+} from '@/types/api';
 
 import { apiFetch } from './client';
 
@@ -30,4 +38,18 @@ export function publishStory(id: string): Promise<PublishResult> {
 
 export function unpublishStory(id: string): Promise<CreatorStory> {
   return apiFetch<CreatorStory>(`/me/stories/${id}/unpublish`, { method: 'POST' });
+}
+
+/** 422 INVALID_STAT (détail `field`) si le type, la valeur par défaut, le min et le max ne vont pas ensemble. */
+export function createStat(storyId: string, input: StatInput): Promise<StatDefinition> {
+  return apiFetch<StatDefinition>(`/me/stories/${storyId}/stats`, { method: 'POST', body: input });
+}
+
+export function updateStat(statId: string, input: Partial<StatInput>): Promise<StatDefinition> {
+  return apiFetch<StatDefinition>(`/me/stats/${statId}`, { method: 'PATCH', body: input });
+}
+
+/** 409 STAT_IN_USE (détail `usedIn`) si une condition ou un effet cite encore la stat. */
+export function deleteStat(statId: string): Promise<void> {
+  return apiFetch<void>(`/me/stats/${statId}`, { method: 'DELETE' });
 }

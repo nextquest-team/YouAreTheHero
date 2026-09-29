@@ -1,9 +1,10 @@
-import Feather from '@expo/vector-icons/Feather';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, Text } from 'react-native';
 
 import { LoadState } from '@/components/common/LoadState';
+import { EditorHeader } from '@/components/editor/EditorHeader';
+import { EditorLink } from '@/components/editor/EditorLink';
 import { PublishIssues } from '@/components/editor/PublishIssues';
 import { StoryInfoForm } from '@/components/editor/StoryInfoForm';
 import { StoryStatusBadge } from '@/components/editor/StoryStatusBadge';
@@ -12,7 +13,10 @@ import { useStoryEditor } from '@/hooks/useMyStories';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
 import type { UpdateStoryInput } from '@/types/api';
-import { spacing, touchTarget, typography } from '@/theme';
+import { typography } from '@/theme';
+
+const statCount = (count: number) =>
+  count === 0 ? fr.stats.none : `${count} ${count === 1 ? fr.stats.one : fr.stats.many}`;
 
 // Éditeur d'une histoire : infos, couverture, avec ou sans combats, publication et suppression.
 export default function StoryEditorScreen() {
@@ -20,6 +24,15 @@ export default function StoryEditorScreen() {
   const { colors } = useTheme();
   const editor = useStoryEditor(id);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const { reload } = editor;
+
+  // Au retour d'un sous-écran (caractéristiques…), les compteurs ont pu changer.
+  useFocusEffect(
+    useCallback(() => {
+      reload();
+    }, [reload]),
+  );
 
   const data = editor.data;
 
@@ -60,27 +73,14 @@ export default function StoryEditorScreen() {
 
   return (
     <Screen scroll>
-      <Pressable
-        onPress={() => router.back()}
-        accessibilityRole="button"
-        accessibilityLabel={fr.common.back}
-        style={styles.back}
-      >
-        <Feather name="arrow-left" size={24} color={colors.text} />
-      </Pressable>
+      <EditorHeader overline={fr.storyEditor.overline} title={data?.title}>
+        {data ? <StoryStatusBadge published={data.published} /> : null}
+      </EditorHeader>
 
       {!data ? (
         <LoadState loading={editor.loading} error={editor.error} onRetry={editor.reload} />
       ) : (
         <>
-          <View style={styles.header}>
-            <Text style={[typography.label, { color: colors.textMuted }]}>{fr.storyEditor.overline}</Text>
-            <Text accessibilityRole="header" style={[typography.title, { color: colors.text }]}>
-              {data.title}
-            </Text>
-            <StoryStatusBadge published={data.published} />
-          </View>
-
           {data.published ? (
             <Text style={[typography.body, { color: colors.textMuted }]}>{fr.storyEditor.lockedNotice}</Text>
           ) : null}
@@ -92,6 +92,13 @@ export default function StoryEditorScreen() {
             busy={editor.busy}
             onSave={save}
             onCoverChange={changeCover}
+          />
+
+          <EditorLink
+            icon="bar-chart-2"
+            label={fr.stats.title}
+            detail={statCount(data.stats.length)}
+            onPress={() => router.push({ pathname: '/editor/[id]/stats', params: { id } })}
           />
 
           {editor.busy ? <ActivityIndicator color={colors.accent} accessibilityLabel={fr.common.loading} /> : null}
@@ -142,8 +149,3 @@ export default function StoryEditorScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  back: { width: touchTarget, height: touchTarget, justifyContent: 'center', marginLeft: -spacing.sm, paddingLeft: spacing.sm },
-  header: { gap: spacing.xs, alignItems: 'flex-start' },
-});

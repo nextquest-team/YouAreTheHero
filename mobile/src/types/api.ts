@@ -147,6 +147,14 @@ export type UpdateStoryInput = Partial<Omit<CreateStoryInput, 'coverUrl'>> & {
 };
 
 // Problème relevé avant publication (détail d'un 422 STORY_INVALID, ou avertissement d'une publication réussie).
+export type StatInput = {
+  name: string;
+  type: 'number' | 'text';
+  defaultValue: string;
+  min: number | null;
+  max: number | null;
+};
+
 export type PublishIssue = { code: string; message: string; sceneId: string | null };
 
 export type PublishResult = CreatorStory & { warnings: PublishIssue[] };
