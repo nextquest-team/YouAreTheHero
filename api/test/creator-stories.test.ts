@@ -457,4 +457,108 @@ describe('module /me/stories', () => {
     expect(paths).toContain('/me/stories');
     expect(paths).toContain('/me/stories/{id}');
   });
+
+  describe('publication', () => {
+    /** Histoire sans combats jouable : départ → fin, publiable telle quelle. */
+    async function createPlayableStory(token: string) {
+      const story = await createStory(token);
+      const [start, end] = await db
+        .insert(scenes)
+        .values([
+          { storyId: story.id, title: 'Départ', text: '' },
+          { storyId: story.id, title: 'Fin', text: '', isEnding: true },
+        ])
+        .returning();
+      await db.insert(choices).values({ fromSceneId: start.id, toSceneId: end.id, label: 'Avancer' });
+      await db.update(stories).set({ startSceneId: start.id }).where(eq(stories.id, story.id));
+      return { story, start, end };
+    }
+
+    const post = (url: string, token: string) =>
+      app.inject({ method: 'POST', url, headers: { authorization: `Bearer ${token}` } });
+
+    it('POST /publish publie une histoire valide, qui apparaît dans la bibliothèque', async () => {
+      const { token } = await createUser(app, { role: 'CREATOR' });
+      const { story } = await createPlayableStory(token);
+
+      const response = await post(`/me/stories/${story.id}/publish`, token);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({ published: true, warnings: [] });
+      expect(response.json().publishedAt).not.toBeNull();
+
+      const player = await createUser(app, { role: 'PLAYER' });
+      const library = await app.inject({
+        method: 'GET',
+        url: '/stories',
+        headers: { authorization: `Bearer ${player.token}` },
+      });
+      expect(library.json().map((s: { id: string }) => s.id)).toContain(story.id);
+    });
+
+    it('POST /publish répond 422 STORY_INVALID avec la liste des erreurs', async () => {
+      const { token } = await createUser(app, { role: 'CREATOR' });
+      const story = await createStory(token);
+
+      const response = await post(`/me/stories/${story.id}/publish`, token);
+
+      expect(response.statusCode).toBe(422);
+      const { error } = response.json();
+      expect(error.code).toBe('STORY_INVALID');
+      expect(error.errors.map((e: { code: string }) => e.code)).toEqual(['NO_START_SCENE', 'NO_ENDING']);
+      expect(error.warnings).toEqual([]);
+
+      const [row] = await db.select().from(stories).where(eq(stories.id, story.id));
+      expect(row.published).toBe(false);
+    });
+
+    it('POST /publish publie malgré une scène inaccessible, et la renvoie en avertissement', async () => {
+      const { token } = await createUser(app, { role: 'CREATOR' });
+      const { story } = await createPlayableStory(token);
+      const [lost] = await db
+        .insert(scenes)
+        .values({ storyId: story.id, title: 'Oubliée', text: '', isEnding: true })
+        .returning();
+
+      const response = await post(`/me/stories/${story.id}/publish`, token);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().warnings).toEqual([
+        expect.objectContaining({ code: 'UNREACHABLE_SCENE', sceneId: lost.id }),
+      ]);
+    });
+
+    it("POST /publish répond 403 sur l'histoire d'un autre créateur", async () => {
+      const owner = await createUser(app, { role: 'CREATOR' });
+      const intruder = await createUser(app, { role: 'CREATOR' });
+      const { story } = await createPlayableStory(owner.token);
+
+      const response = await post(`/me/stories/${story.id}/publish`, intruder.token);
+
+      expect(response.statusCode).toBe(403);
+    });
+
+    it("une histoire publiée n'est plus modifiable (409), puis le redevient après /unpublish", async () => {
+      const { token } = await createUser(app, { role: 'CREATOR' });
+      const { story } = await createPlayableStory(token);
+      await post(`/me/stories/${story.id}/publish`, token);
+
+      const patch = () =>
+        app.inject({
+          method: 'PATCH',
+          url: `/me/stories/${story.id}`,
+          headers: { authorization: `Bearer ${token}` },
+          payload: { title: 'Nouveau titre' },
+        });
+
+      expect((await patch()).statusCode).toBe(409);
+
+      const unpublished = await post(`/me/stories/${story.id}/unpublish`, token);
+      expect(unpublished.statusCode).toBe(200);
+      expect(unpublished.json()).toMatchObject({ published: false, publishedAt: null });
+
+      expect((await patch()).statusCode).toBe(200);
+    });
+  });
 });
+

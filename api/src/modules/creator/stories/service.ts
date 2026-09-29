@@ -4,7 +4,8 @@ import { choices, enemies, items, scenes, statDefinitions, stories } from '../..
 import { unprocessable } from '../../../lib/errors.js';
 import { assertInStory, type Story } from '../ownership.js';
 import { toDto as statToDto } from '../stats/service.js';
-import type { CreateStoryBody, StoryDto, StoryFullDto, UpdateStoryBody } from './schemas.js';
+import type { CreateStoryBody, PublishResultDto, StoryDto, StoryFullDto, UpdateStoryBody } from './schemas.js';
+import { validateStory } from './validation.js';
 
 function toDto(story: Story): StoryDto {
   return {
@@ -201,4 +202,37 @@ export async function update(story: Story, input: UpdateStoryBody): Promise<Stor
 
 export async function remove(storyId: string): Promise<void> {
   await db.delete(stories).where(eq(stories.id, storyId));
+}
+
+/**
+ * Publie l'histoire si elle passe la validation : sinon 422 STORY_INVALID avec { errors, warnings }.
+ * Les avertissements (scènes inaccessibles) n'empêchent pas la publication et sont renvoyés.
+ */
+export async function publish(story: Story): Promise<PublishResultDto> {
+  const { errors, warnings } = validateStory(await getFull(story));
+  if (errors.length > 0) {
+    throw unprocessable('STORY_INVALID', "L'histoire ne peut pas encore être publiée", { errors, warnings });
+  }
+  if (story.published) {
+    return { ...toDto(story), warnings };
+  }
+  const [updated] = await db
+    .update(stories)
+    .set({ published: true, publishedAt: new Date() })
+    .where(eq(stories.id, story.id))
+    .returning();
+  return { ...toDto(updated), warnings };
+}
+
+/** Repasse l'histoire en brouillon pour pouvoir la modifier. Les parties en cours sont conservées. */
+export async function unpublish(story: Story): Promise<StoryDto> {
+  if (!story.published) {
+    return toDto(story);
+  }
+  const [updated] = await db
+    .update(stories)
+    .set({ published: false, publishedAt: null })
+    .where(eq(stories.id, story.id))
+    .returning();
+  return toDto(updated);
 }

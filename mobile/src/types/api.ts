@@ -107,3 +107,46 @@ export type Usage = {
   storyId: string;
   label: string;
 };
+
+// Histoire vue par son créateur (/me/stories), publiée ou en brouillon.
+export type CreatorStory = {
+  id: string;
+  title: string;
+  summary: string;
+  genre: string;
+  coverUrl: string | null;
+  hasCombat: boolean;
+  startSceneId: string | null;
+  attackStatId: string | null;
+  hpStatId: string | null;
+  published: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Histoire complète renvoyée par GET /me/stories/:id. Seuls les champs lus par l'éditeur sont typés ici.
+export type CreatorStoryFull = CreatorStory & {
+  stats: StatDefinition[];
+  scenes: { id: string; title: string; isEnding: boolean; enemyId: string | null }[];
+};
+
+export type CreateStoryInput = {
+  title: string;
+  summary: string;
+  genre: string;
+  coverUrl?: string;
+  hasCombat?: boolean;
+};
+
+export type UpdateStoryInput = Partial<Omit<CreateStoryInput, 'coverUrl'>> & {
+  coverUrl?: string | null;
+  startSceneId?: string | null;
+  attackStatId?: string | null;
+  hpStatId?: string | null;
+};
+
+// Problème relevé avant publication (détail d'un 422 STORY_INVALID, ou avertissement d'une publication réussie).
+export type PublishIssue = { code: string; message: string; sceneId: string | null };
+
+export type PublishResult = CreatorStory & { warnings: PublishIssue[] };

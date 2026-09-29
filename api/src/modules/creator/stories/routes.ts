@@ -2,7 +2,14 @@ import { z } from 'zod';
 import type { App } from '../../../app.js';
 import { assertEditable, assertOwner } from '../ownership.js';
 import * as storiesService from './service.js';
-import { createStoryBodySchema, idParamSchema, storyFullSchema, storySchema, updateStoryBodySchema } from './schemas.js';
+import {
+  createStoryBodySchema,
+  idParamSchema,
+  publishResultSchema,
+  storyFullSchema,
+  storySchema,
+  updateStoryBodySchema,
+} from './schemas.js';
 
 // Module d'exemple : toutes les routes /me/stories sont réservées au créateur propriétaire.
 // A recopiera cette structure (routes minces, service avec la logique, schémas séparés) pour
@@ -88,6 +95,38 @@ export default async function routes(app: App) {
       assertEditable(story);
       await storiesService.remove(story.id);
       reply.code(204).send(null);
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/me/stories/:id/publish',
+    schema: {
+      tags: ['creator'],
+      security: [{ bearerAuth: [] }],
+      params: idParamSchema,
+      response: { 200: publishResultSchema },
+    },
+    preHandler,
+    handler: async (request) => {
+      const story = await assertOwner(request.params.id, request.user.sub);
+      return storiesService.publish(story);
+    },
+  });
+
+  app.route({
+    method: 'POST',
+    url: '/me/stories/:id/unpublish',
+    schema: {
+      tags: ['creator'],
+      security: [{ bearerAuth: [] }],
+      params: idParamSchema,
+      response: { 200: storySchema },
+    },
+    preHandler,
+    handler: async (request) => {
+      const story = await assertOwner(request.params.id, request.user.sub);
+      return storiesService.unpublish(story);
     },
   });
 }
