@@ -14,7 +14,7 @@ import { useGenres, useSaves, useStories } from '@/hooks/useStories';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
 import { assetUrl } from '@/services/client';
-import { fonts, typography } from '@/theme';
+import { fonts, hairline, typography } from '@/theme';
 
 export default function Library() {
   const { colors } = useTheme();
@@ -42,24 +42,31 @@ export default function Library() {
   return (
     <Screen scroll>
       <View style={styles.header}>
-        <View style={styles.greeting}>
-          <Text style={[typography.label, { color: colors.textMuted }]}>{fr.library.greeting}</Text>
-          <Text accessibilityRole="header" style={[typography.title, { color: colors.text }]} numberOfLines={1}>
-            {user?.displayName}
+        <View style={styles.brandRow}>
+          <Text style={[typography.overline, styles.brand, { color: colors.text }]} numberOfLines={1}>
+            {`${fr.library.greeting} ${user?.displayName ?? ''}`}
           </Text>
+          <Pressable
+            onPress={() => router.push('/selfie')}
+            accessibilityRole="button"
+            accessibilityLabel={fr.library.heroButton}
+            style={[styles.hero, { borderColor: colors.borderStrong, backgroundColor: colors.surfaceAlt }]}
+          >
+            {avatar ? (
+              <Image source={avatar} style={styles.heroImage} contentFit="cover" />
+            ) : (
+              <Feather name="camera" size={20} color={colors.text} />
+            )}
+          </Pressable>
         </View>
-        <Pressable
-          onPress={() => router.push('/selfie')}
-          accessibilityRole="button"
-          accessibilityLabel={fr.library.heroButton}
-          style={[styles.hero, { borderColor: colors.accent, backgroundColor: colors.surfaceAlt }]}
-        >
-          {avatar ? (
-            <Image source={avatar} style={styles.heroImage} contentFit="cover" />
-          ) : (
-            <Feather name="camera" size={22} color={colors.accent} />
-          )}
-        </Pressable>
+        {/* Double filet d'en-tête de carnet */}
+        <View style={[styles.doubleRule, { borderColor: colors.borderStrong }]} />
+        <Text accessibilityRole="header" style={[styles.headline, { color: colors.text }]}>
+          {fr.library.headlineStart}
+          <Text style={{ fontFamily: fonts.displayItalic, color: colors.accent }}>{fr.library.headlineAccent}</Text>
+          {fr.library.headlineEnd}
+        </Text>
+        <Text style={[styles.tagline, { color: colors.textMuted }]}>{fr.library.tagline}</Text>
       </View>
 
       {current ? (
@@ -115,20 +122,24 @@ export default function Library() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 },
-  greeting: { flex: 1, gap: 2 },
+  header: { gap: 10 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 },
+  brand: { flex: 1 },
+  doubleRule: { borderTopWidth: hairline, borderBottomWidth: hairline, paddingTop: 3 },
+  headline: { fontFamily: fonts.display, fontSize: 42, lineHeight: 46, marginTop: 4 },
+  tagline: { fontFamily: fonts.bodyItalic, fontSize: 16, lineHeight: 22 },
   hero: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderWidth: 2,
+    borderWidth: hairline,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   heroImage: { width: '100%', height: '100%' },
-  section: { gap: 10 },
-  list: { gap: 10 },
+  section: { gap: 14 },
+  list: { gap: 18, paddingRight: 4, paddingBottom: 4 },
   empty: { alignItems: 'center', gap: 8, paddingVertical: 24 },
   emptyText: { textAlign: 'center', fontFamily: fonts.body },
 });

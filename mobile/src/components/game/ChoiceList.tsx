@@ -3,34 +3,44 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
-import { fonts, radius, spacing } from '@/theme';
+import { fonts, hairline, offsetShadow, radius, spacing, typography } from '@/theme';
 import type { GameState } from '@/types/api';
 
 type Props = { choices: GameState['choices']; disabled: boolean; onChoose: (choiceId: string) => void };
 
-/** Choix de la scène ; un choix verrouillé reste visible, grisé, avec sa condition. */
+const letterOf = (index: number) => String.fromCharCode(65 + index);
+
+/**
+ * Choix de la scène, lettrés A, B, C comme dans un livre-jeu. Un choix verrouillé reste
+ * visible : pointillés, cadenas et condition écrite, jamais la couleur seule.
+ */
 export function ChoiceList({ choices, disabled, onChoose }: Props) {
   const { colors } = useTheme();
 
   return (
     <View style={styles.list}>
-      {choices.map((choice) =>
-        choice.locked ? (
+      <Text accessibilityRole="header" style={[typography.overline, { color: colors.textMuted }]}>
+        {fr.game.whatDoYouDo}
+      </Text>
+      {choices.map((choice, index) => {
+        const letter = letterOf(index);
+        return choice.locked ? (
           <View
             key={choice.id}
             accessible
             accessibilityRole="button"
             accessibilityState={{ disabled: true }}
-            accessibilityLabel={`${choice.label}, ${fr.game.locked}${choice.conditionLabel ? ` : ${choice.conditionLabel}` : ''}`}
-            style={[styles.choice, styles.locked, { borderColor: colors.border }]}
+            accessibilityLabel={`${fr.game.choiceLetter} ${letter}, ${choice.label}, ${fr.game.locked}${choice.conditionLabel ? ` : ${choice.conditionLabel}` : ''}`}
+            style={[styles.choice, styles.locked, { borderColor: colors.textMuted }]}
           >
-            <Text style={[styles.label, { color: colors.textMuted }]}>{choice.label}</Text>
-            {choice.conditionLabel ? (
-              <View style={styles.condition}>
-                <Feather name="lock" size={13} color={colors.textMuted} />
-                <Text style={[styles.conditionText, { color: colors.textMuted }]}>{choice.conditionLabel}</Text>
-              </View>
-            ) : null}
+            <Text style={[styles.letter, { color: colors.textMuted }]}>{letter}</Text>
+            <View style={styles.lockedText}>
+              <Text style={[styles.label, { color: colors.textMuted }]}>{choice.label}</Text>
+              <Text style={[styles.condition, { color: colors.textMuted }]}>
+                {choice.conditionLabel ? `${fr.game.locked} · ${choice.conditionLabel}` : fr.game.locked}
+              </Text>
+            </View>
+            <Feather name="lock" size={18} color={colors.textMuted} />
           </View>
         ) : (
           <Pressable
@@ -38,37 +48,45 @@ export function ChoiceList({ choices, disabled, onChoose }: Props) {
             onPress={() => onChoose(choice.id)}
             disabled={disabled}
             accessibilityRole="button"
-            accessibilityLabel={choice.label}
+            accessibilityLabel={`${fr.game.choiceLetter} ${letter}, ${choice.label}`}
             accessibilityState={{ disabled }}
             style={({ pressed }) => [
               styles.choice,
-              { backgroundColor: colors.surface, borderColor: colors.border, opacity: disabled ? 0.6 : pressed ? 0.8 : 1 },
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.borderStrong,
+                boxShadow: offsetShadow(colors.borderStrong),
+                opacity: disabled ? 0.6 : 1,
+              },
+              pressed && styles.pressed,
             ]}
           >
+            <Text style={[styles.letter, { color: colors.accent }]}>{letter}</Text>
             <Text style={[styles.label, { color: colors.text }]}>{choice.label}</Text>
-            <Feather name="chevron-right" size={18} color={colors.accent} />
+            <Feather name="arrow-right" size={20} color={colors.text} />
           </Pressable>
-        ),
-      )}
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  list: { gap: 10 },
+  list: { gap: spacing.md, paddingRight: 4, paddingBottom: 4 },
   choice: {
-    minHeight: 52,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
+    minHeight: 60,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: hairline,
     borderRadius: radius.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: spacing.md,
   },
+  pressed: { transform: [{ translateX: 2 }, { translateY: 2 }], boxShadow: 'none' },
   locked: { borderStyle: 'dashed', backgroundColor: 'transparent' },
-  label: { flex: 1, fontFamily: fonts.bodySemiBold, fontSize: 15, lineHeight: 21 },
-  condition: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  conditionText: { fontFamily: fonts.bodyBold, fontSize: 12 },
+  letter: { fontFamily: fonts.monoBold, fontSize: 14 },
+  label: { flex: 1, fontFamily: fonts.display, fontSize: 20, lineHeight: 23 },
+  lockedText: { flex: 1, gap: 2 },
+  condition: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
 });

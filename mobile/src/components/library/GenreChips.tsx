@@ -1,8 +1,9 @@
+import Feather from '@expo/vector-icons/Feather';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
-import { fonts, spacing, touchTarget } from '@/theme';
+import { fonts, hairline, spacing, touchTarget } from '@/theme';
 
 type Props = { genres: string[]; value: string | null; onChange: (genre: string | null) => void };
 
@@ -29,17 +30,12 @@ export function GenreChips({ genres, value, onChange }: Props) {
               styles.chip,
               selected
                 ? { backgroundColor: colors.primary, borderColor: colors.primary }
-                : { backgroundColor: 'transparent', borderColor: colors.border },
+                : { backgroundColor: 'transparent', borderColor: colors.borderStrong },
             ]}
           >
-            <Text
-              style={[
-                styles.label,
-                { color: selected ? colors.onPrimary : colors.text, fontFamily: selected ? fonts.bodyBold : fonts.bodySemiBold },
-              ]}
-            >
-              {option.label}
-            </Text>
+            {/* Sélection lisible sans la couleur : pastille pleine + coche */}
+            {selected ? <Feather name="check" size={14} color={colors.onPrimary} /> : null}
+            <Text style={[styles.label, { color: selected ? colors.onPrimary : colors.text }]}>{option.label}</Text>
           </Pressable>
         );
       })}
@@ -53,8 +49,10 @@ const styles = StyleSheet.create({
     minHeight: touchTarget,
     paddingHorizontal: spacing.lg,
     borderRadius: touchTarget / 2,
-    borderWidth: 1,
-    justifyContent: 'center',
+    borderWidth: hairline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  label: { fontSize: 14 },
+  label: { fontFamily: fonts.monoBold, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase' },
 });

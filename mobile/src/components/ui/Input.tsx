@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
-import { fonts, radius, spacing } from '@/theme';
+import { fonts, hairline, radius, spacing } from '@/theme';
 
 type Props = TextInputProps & {
   label: string;
@@ -15,7 +15,7 @@ export function Input({ label, error, multiline, style, ...rest }: Props) {
 
   return (
     <View style={styles.field}>
-      <Text nativeID={id} style={[styles.label, { color: colors.text }]}>
+      <Text nativeID={id} style={[styles.label, { color: colors.textMuted }]}>
         {label}
       </Text>
       <TextInput
@@ -28,7 +28,8 @@ export function Input({ label, error, multiline, style, ...rest }: Props) {
           multiline && styles.multiline,
           {
             backgroundColor: colors.surface,
-            borderColor: error ? colors.danger : colors.border,
+            borderColor: error ? colors.danger : colors.borderStrong,
+            borderWidth: error ? 2 : hairline,
             color: colors.text,
           },
           style,
@@ -46,14 +47,13 @@ export function Input({ label, error, multiline, style, ...rest }: Props) {
 
 const styles = StyleSheet.create({
   field: { gap: 6 },
-  label: { fontFamily: fonts.bodySemiBold, fontSize: 14 },
+  label: { fontFamily: fonts.monoBold, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' },
   input: {
     minHeight: 48,
-    borderWidth: 1,
     borderRadius: radius.md,
     paddingHorizontal: 14,
     fontFamily: fonts.body,
-    fontSize: 16,
+    fontSize: 17,
   },
   multiline: {
     minHeight: 96,

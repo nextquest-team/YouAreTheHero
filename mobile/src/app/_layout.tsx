@@ -1,10 +1,12 @@
-import { CormorantGaramond_700Bold } from '@expo-google-fonts/cormorant-garamond';
+import { IMFellEnglish_400Regular, IMFellEnglish_400Regular_Italic } from '@expo-google-fonts/im-fell-english';
+import { JetBrainsMono_500Medium, JetBrainsMono_700Bold } from '@expo-google-fonts/jetbrains-mono';
 import {
-  NunitoSans_400Regular,
-  NunitoSans_600SemiBold,
-  NunitoSans_700Bold,
-  useFonts,
-} from '@expo-google-fonts/nunito-sans';
+  Spectral_400Regular,
+  Spectral_400Regular_Italic,
+  Spectral_600SemiBold,
+  Spectral_700Bold,
+} from '@expo-google-fonts/spectral';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -50,10 +52,14 @@ function RootStack({ fontsReady }: { fontsReady: boolean }) {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    CormorantGaramond_700Bold,
-    NunitoSans_400Regular,
-    NunitoSans_600SemiBold,
-    NunitoSans_700Bold,
+    IMFellEnglish_400Regular,
+    IMFellEnglish_400Regular_Italic,
+    Spectral_400Regular,
+    Spectral_400Regular_Italic,
+    Spectral_600SemiBold,
+    Spectral_700Bold,
+    JetBrainsMono_500Medium,
+    JetBrainsMono_700Bold,
   });
 
   return (

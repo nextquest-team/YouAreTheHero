@@ -8,7 +8,7 @@ import { Button } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
 import { assetUrl } from '@/services/client';
-import { fonts, radius, spacing, touchTarget, typography } from '@/theme';
+import { fonts, hairline, offsetShadow, radius, spacing, touchTarget, typography } from '@/theme';
 import type { GameState } from '@/types/api';
 
 import { gameColors } from './gameColors';
@@ -33,8 +33,8 @@ export function InventorySheet({ visible, items, canUse, busy, onUse, onClose }:
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable style={[styles.scrim, { backgroundColor: gameColors.scrim }]} onPress={onClose} accessibilityLabel={fr.game.close} />
-      <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: colors.background, borderColor: colors.border }]}>
-        <View accessibilityElementsHidden importantForAccessibility="no" style={[styles.handle, { backgroundColor: colors.border }]} />
+      <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: colors.background, borderColor: colors.borderStrong }]}>
+        <View accessibilityElementsHidden importantForAccessibility="no" style={[styles.handle, { backgroundColor: colors.borderStrong }]} />
 
         <View style={styles.header}>
           <View style={styles.headerText}>
@@ -42,7 +42,7 @@ export function InventorySheet({ visible, items, canUse, busy, onUse, onClose }:
               {fr.game.inventory}
             </Text>
             {items.length > 0 ? (
-              <Text style={[typography.caption, { color: colors.textMuted }]}>{`${totalQty} ${countLabel}`}</Text>
+              <Text style={[typography.overline, { color: colors.textMuted }]}>{`${totalQty} ${countLabel}`}</Text>
             ) : null}
           </View>
           <Pressable
@@ -73,25 +73,32 @@ export function InventorySheet({ visible, items, canUse, busy, onUse, onClose }:
                     style={[
                       styles.tile,
                       {
-                        backgroundColor: selected ? colors.surfaceAlt : colors.surface,
-                        borderColor: selected ? colors.primary : colors.border,
-                        borderWidth: selected ? 2 : 1,
+                        backgroundColor: colors.surface,
+                        borderColor: colors.borderStrong,
+                        borderWidth: selected ? 2.5 : hairline,
+                        boxShadow: selected ? offsetShadow(colors.accent) : 'none',
                       },
                     ]}
                   >
-                    <View style={[styles.art, { backgroundColor: colors.surfaceAlt }]}>
+                    {/* Sélection : trait épaissi, ombre et coche, pas seulement une teinte */}
+                    {selected ? (
+                      <View style={[styles.check, { backgroundColor: colors.primary }]}>
+                        <Feather name="check" size={12} color={colors.onPrimary} />
+                      </View>
+                    ) : null}
+                    <View style={[styles.art, { backgroundColor: colors.surfaceAlt, borderColor: colors.borderStrong }]}>
                       {image ? (
                         <Image source={image} style={styles.artImage} contentFit="cover" />
                       ) : (
-                        <Feather name={item.usable ? 'droplet' : 'key'} size={26} color={colors.accent} />
+                        <Feather name={item.usable ? 'droplet' : 'key'} size={24} color={colors.text} />
                       )}
                     </View>
                     <Text style={[styles.tileName, { color: colors.text }]} numberOfLines={2}>
                       {item.name}
                     </Text>
                     {item.qty > 1 ? (
-                      <View style={[styles.qtyBadge, { backgroundColor: colors.primary }]}>
-                        <Text style={[styles.qtyText, { color: colors.onPrimary }]}>×{item.qty}</Text>
+                      <View style={[styles.qtyBadge, { backgroundColor: colors.accent }]}>
+                        <Text style={[styles.qtyText, { color: colors.background }]}>×{item.qty}</Text>
                       </View>
                     ) : null}
                   </Pressable>
@@ -100,7 +107,7 @@ export function InventorySheet({ visible, items, canUse, busy, onUse, onClose }:
             </View>
 
             {current ? (
-              <View style={[styles.detail, { borderTopColor: colors.border }]}>
+              <View style={[styles.detail, { borderTopColor: colors.borderStrong }]}>
                 <Text style={[styles.detailName, { color: colors.text }]}>{current.name}</Text>
                 {current.description ? (
                   <Text style={[typography.body, { color: colors.textSoft }]}>{current.description}</Text>
@@ -131,9 +138,9 @@ const styles = StyleSheet.create({
   scrim: { flex: 1 },
   sheet: {
     maxHeight: '80%',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    borderWidth: hairline,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
     paddingBottom: spacing.lg,
@@ -142,7 +149,7 @@ const styles = StyleSheet.create({
   handle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerText: { gap: 2 },
-  title: { fontFamily: fonts.display, fontSize: 30, lineHeight: 32 },
+  title: { fontFamily: fonts.displayItalic, fontSize: 30, lineHeight: 34 },
   close: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center', marginRight: -spacing.sm },
   scroll: { gap: spacing.lg, paddingBottom: spacing.lg },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
@@ -158,9 +165,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
   },
-  art: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  art: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  check: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   artImage: { width: '100%', height: '100%' },
-  tileName: { fontFamily: fonts.bodyBold, fontSize: 13, lineHeight: 16, textAlign: 'center' },
+  tileName: { fontFamily: fonts.bodySemiBold, fontSize: 14, lineHeight: 17, textAlign: 'center' },
   qtyBadge: {
     position: 'absolute',
     top: 8,
@@ -172,8 +197,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  qtyText: { fontFamily: fonts.bodyBold, fontSize: 12 },
+  qtyText: { fontFamily: fonts.monoBold, fontSize: 12 },
   detail: { gap: spacing.sm, paddingTop: spacing.md, borderTopWidth: 1 },
-  detailName: { fontFamily: fonts.display, fontSize: 25, lineHeight: 28 },
+  detailName: { fontFamily: fonts.display, fontSize: 26, lineHeight: 30 },
   passiveNote: { lineHeight: 19 },
 });

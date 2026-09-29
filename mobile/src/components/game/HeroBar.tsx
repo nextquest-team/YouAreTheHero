@@ -1,49 +1,55 @@
 import Feather from '@expo/vector-icons/Feather';
-import { Image } from 'expo-image';
-import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
-import { assetUrl } from '@/services/client';
-import { fonts, radius, spacing } from '@/theme';
+import { fonts, hairline, radius, spacing, touchTarget } from '@/theme';
 import type { GameState } from '@/types/api';
 
 import { Gauge } from './Gauge';
 import { gameColors } from './gameColors';
 
-type Props = { game: GameState };
+type Props = { game: GameState; itemCount: number; onOpenInventory: () => void };
 
-/** Visage du héros, jauge de PV et stats numériques, posés à cheval sur le décor. */
-export function HeroBar({ game }: Props) {
-  const { colors } = useTheme();
-  const face = assetUrl(game.heroFaceUrl);
+/** Feuille d'aventure résumée, en pied d'écran : PV en cases, stats numériques et sac. */
+export function HeroBar({ game, itemCount, onOpenInventory }: Props) {
   const hp = game.stats.find((stat) => stat.id === game.hpStatId);
   const others = game.stats.filter((stat) => stat.type === 'number' && stat.id !== game.hpStatId);
 
   return (
-    <View style={[styles.bar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Pressable
-        onPress={() => router.push({ pathname: '/selfie', params: { storyId: game.storyId } })}
-        accessibilityRole="button"
-        accessibilityLabel={fr.game.heroFaceButton}
-        style={[styles.face, { borderColor: colors.accent, backgroundColor: colors.surfaceAlt }]}
-      >
-        {face ? (
-          <Image source={face} style={styles.faceImage} contentFit="cover" accessibilityLabel={fr.game.heroAlt} />
-        ) : (
-          <Feather name="user" size={22} color={colors.textMuted} />
-        )}
-      </Pressable>
-      {hp ? <Gauge label={hp.name} value={Number(hp.value)} max={hp.max} color={gameColors.hpFill} /> : <View style={styles.spacer} />}
+    <View accessibilityLabel={fr.game.sheet} style={[styles.bar, { backgroundColor: gameColors.ink }]}>
+      {hp ? (
+        <Gauge
+          label={hp.name}
+          value={Number(hp.value)}
+          max={hp.max}
+          color={gameColors.paper}
+          textColor={gameColors.paper}
+          emptyColor={gameColors.paperMuted}
+        />
+      ) : (
+        <View style={styles.spacer} />
+      )}
       {others.map((stat) => (
-        <View key={stat.id} style={[styles.stat, { backgroundColor: colors.surfaceAlt }]} accessible accessibilityLabel={`${stat.name} ${stat.value}`}>
-          <Text style={[styles.statName, { color: colors.textMuted }]} numberOfLines={1}>
+        <View key={stat.id} style={styles.stat} accessible accessibilityLabel={`${stat.name} ${stat.value}`}>
+          <Text style={[styles.statValue, { color: gameColors.paper }]}>{stat.value}</Text>
+          <Text style={[styles.statName, { color: gameColors.paperMuted }]} numberOfLines={1}>
             {stat.name}
           </Text>
-          <Text style={[styles.statValue, { color: colors.text }]}>{stat.value}</Text>
         </View>
       ))}
+      <Pressable
+        onPress={onOpenInventory}
+        accessibilityRole="button"
+        accessibilityLabel={`${fr.game.inventory}, ${itemCount}`}
+        style={({ pressed }) => [styles.bag, { borderColor: gameColors.paper, opacity: pressed ? 0.7 : 1 }]}
+      >
+        <Feather name="briefcase" size={20} color={gameColors.paper} />
+        {itemCount > 0 ? (
+          <View style={[styles.badge, { backgroundColor: gameColors.accentOnInk }]}>
+            <Text style={[styles.badgeText, { color: gameColors.ink }]}>{itemCount}</Text>
+          </View>
+        ) : null}
+      </Pressable>
     </View>
   );
 }
@@ -52,24 +58,33 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderRadius: radius.xl,
+    gap: 14,
+    paddingHorizontal: 14,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
   },
-  face: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
+  spacer: { flex: 1 },
+  stat: { alignItems: 'center', minWidth: 32, maxWidth: 72 },
+  statValue: { fontFamily: fonts.monoBold, fontSize: 18 },
+  statName: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.5, textTransform: 'uppercase' },
+  bag: {
+    width: touchTarget,
+    height: touchTarget,
+    borderWidth: hairline,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
   },
-  faceImage: { width: '100%', height: '100%' },
-  spacer: { flex: 1 },
-  stat: { alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.sm, maxWidth: 84 },
-  statName: { fontFamily: fonts.body, fontSize: 11 },
-  statValue: { fontFamily: fonts.bodyBold, fontSize: 15 },
+  badge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { fontFamily: fonts.monoBold, fontSize: 11 },
 });
