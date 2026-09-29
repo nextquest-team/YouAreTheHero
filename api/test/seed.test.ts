@@ -21,11 +21,11 @@ describe('seed de démo', () => {
     await runSeed();
   });
 
-  it('crée exactement 2 utilisateurs et 2 histoires', async () => {
+  it('crée exactement 2 utilisateurs et 3 histoires', async () => {
     const allUsers = await db.select().from(users);
     const allStories = await db.select().from(stories);
     expect(allUsers).toHaveLength(2);
-    expect(allStories).toHaveLength(2);
+    expect(allStories).toHaveLength(3);
   });
 
   it('permet de se connecter avec le compte joueur de démo', async () => {
@@ -60,13 +60,34 @@ describe('seed de démo', () => {
   });
 
   it("une histoire sans combats n'a aucune scène avec ennemi", async () => {
-    const [draft] = await db.select().from(stories).where(eq(stories.published, false));
+    const [draft] = await db.select().from(stories).where(eq(stories.title, 'Le Phare des Brumes'));
     expect(draft.hasCombat).toBe(false);
 
     const draftScenes = await db.select().from(scenes).where(eq(scenes.storyId, draft.id));
     for (const scene of draftScenes) {
       expect(scene.enemyId).toBeNull();
     }
+  });
+
+  it('le brouillon du Tombeau passe la validation de publication', async () => {
+    const login = await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      payload: { email: 'auteur@demo.fr', password: 'demo1234' },
+    });
+    const [tomb] = await db.select().from(stories).where(eq(stories.title, 'Le Tombeau de la Reine Grise'));
+    expect(tomb.published).toBe(false);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/me/stories/${tomb.id}/publish`,
+      headers: { authorization: `Bearer ${login.json().token}` },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().warnings).toEqual([]);
+
+    // Remis en brouillon : les autres tests comptent une seule histoire publiée.
+    await db.update(stories).set({ published: false, publishedAt: null }).where(eq(stories.id, tomb.id));
   });
 
   it('toute histoire qui a une scène de combat a hasCombat = true', async () => {

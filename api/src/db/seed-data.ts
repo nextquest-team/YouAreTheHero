@@ -1,5 +1,5 @@
-// Données du seed de démo : deux comptes et deux histoires
-// de l'auteur, une publiée et jouable, une brouillon. Les conditions/effets référencent leurs
+// Données du seed de démo : deux comptes et trois histoires
+// de l'auteur, une publiée et jouable, deux brouillons (dont une complète). Les conditions/effets référencent leurs
 // stats/objets/ennemis par une clé symbolique (ex. « force », « cle ») plutôt que par un uuid :
 // seed.ts les résout vers les vrais id une fois les lignes insérées (voir docs/conception.md §3).
 
@@ -329,6 +329,220 @@ export const lighthouseStory: SeedStory = {
       label: 'Monter vers le phare',
       condition: null,
       effects: [],
+    },
+  ],
+};
+
+const noCombat = { enemyKey: null, winSceneKey: null, loseSceneKey: null };
+
+/**
+ * Brouillon complet, prêt à publier : sert à montrer l'éditeur (combats, conditions sur objet
+ * et sur stat, butin, effets à l'entrée) puis à publier l'histoire en direct pendant la démo.
+ */
+export const tombStory: SeedStory = {
+  title: 'Le Tombeau de la Reine Grise',
+  summary:
+    "Sous la chapelle en ruine dort une reine que personne n'a pleurée. On dit que son trésor attend encore quelqu'un d'assez brave, ou d'assez fou, pour descendre le chercher.",
+  genre: 'Fantasy',
+  coverUrl: '/uploads/crypte-couverture.png',
+  published: false,
+  hasCombat: true,
+  stats: [
+    { key: 'pv', name: 'PV', type: 'number', defaultValue: '20', min: 0, max: 30 },
+    { key: 'force', name: 'Force', type: 'number', defaultValue: '4', min: 0, max: null },
+    { key: 'courage', name: 'Courage', type: 'number', defaultValue: '3', min: 0, max: 10 },
+    { key: 'titre', name: 'Titre', type: 'text', defaultValue: 'Pilleur de tombes', min: null, max: null },
+  ],
+  attackStatKey: 'force',
+  hpStatKey: 'pv',
+  items: [
+    {
+      key: 'cle',
+      name: 'Clé rouillée',
+      description: "Lourde, froide, gravée d'une couronne. Elle ouvre sûrement quelque chose en bas.",
+      imageUrl: '/uploads/cle-rouillee.png',
+      useEffects: null,
+    },
+    {
+      key: 'potion',
+      name: 'Potion de soin',
+      description: 'Un liquide rouge qui sent la cannelle.',
+      imageUrl: '/uploads/potion-de-soin.png',
+      useEffects: [{ type: 'stat', statKey: 'pv', delta: 8 }],
+    },
+    { key: 'torche', name: 'Torche', description: 'Elle ne tiendra pas toute la nuit.', imageUrl: null, useEffects: null },
+    {
+      key: 'amulette',
+      name: "Amulette d'argent",
+      description: 'La serrer dans le poing redonne du cœur au ventre.',
+      imageUrl: null,
+      useEffects: [{ type: 'stat', statKey: 'courage', delta: 2 }],
+    },
+  ],
+  enemies: [
+    {
+      key: 'rat',
+      name: 'Rat géant',
+      imageUrl: null,
+      attack: 1,
+      hp: 4,
+      shield: 0,
+      extraStats: [{ name: 'Taille', value: "Celle d'un chien" }],
+      defeatEffects: [],
+    },
+    {
+      key: 'goule',
+      name: 'Goule affamée',
+      imageUrl: '/uploads/goule.png',
+      attack: 3,
+      hp: 12,
+      shield: 0,
+      extraStats: [
+        { name: 'Élément', value: 'Ténèbres' },
+        { name: 'Faiblesse', value: 'Lumière' },
+      ],
+      defeatEffects: [{ type: 'item', itemKey: 'amulette', qty: 1 }],
+    },
+    {
+      key: 'gardien',
+      name: 'Squelette gardien',
+      imageUrl: null,
+      attack: 2,
+      hp: 8,
+      shield: 4,
+      extraStats: [{ name: 'Arme', value: 'Hallebarde' }],
+      defeatEffects: [
+        { type: 'stat', statKey: 'force', delta: 1 },
+        { type: 'item', itemKey: 'potion', qty: 1 },
+      ],
+    },
+  ],
+  startSceneKey: 'entree',
+  scenes: [
+    {
+      key: 'entree',
+      title: "L'entrée de la crypte",
+      text: "L'escalier s'enfonce sous la chapelle. L'air sent la pierre mouillée et quelque chose de plus ancien. À tes pieds, des gravats cachent peut-être autre chose que de la poussière.",
+      backgroundUrl: '/uploads/crypte-entree.png',
+      isEnding: false,
+      ...noCombat,
+      onEnterEffects: [{ type: 'item', itemKey: 'torche', qty: 1 }],
+    },
+    {
+      key: 'gravats',
+      title: 'Sous les gravats',
+      text: 'Tu retournes les pierres une à une. Entre deux dalles brisées, un éclat de métal : une clé, et une petite fiole oubliée.',
+      backgroundUrl: null,
+      isEnding: false,
+      ...noCombat,
+      onEnterEffects: [
+        { type: 'item', itemKey: 'cle', qty: 1 },
+        { type: 'item', itemKey: 'potion', qty: 1 },
+      ],
+    },
+    {
+      key: 'couloir',
+      title: 'Le couloir des échos',
+      text: "Chaque pas revient trois fois. Au fond, une lueur verdâtre. Sur la gauche, une porte scellée d'une couronne. Quelque part, des griffes grattent la pierre.",
+      backgroundUrl: '/uploads/couloir-echos.png',
+      isEnding: false,
+      ...noCombat,
+      onEnterEffects: [],
+    },
+    {
+      key: 'nid',
+      title: 'Le nid',
+      text: "Un rat énorme jaillit d'une niche, les yeux rouges dans la lumière de ta torche.",
+      backgroundUrl: null,
+      isEnding: false,
+      enemyKey: 'rat',
+      winSceneKey: 'antichambre',
+      loseSceneKey: 'tenebres',
+      onEnterEffects: [],
+    },
+    {
+      key: 'antichambre',
+      title: "L'antichambre",
+      text: 'La lueur venait d\'ici. Penchée sur un sarcophage ouvert, une goule se retourne lentement.',
+      backgroundUrl: '/uploads/antichambre-goule.png',
+      isEnding: false,
+      enemyKey: 'goule',
+      winSceneKey: 'tresor',
+      loseSceneKey: 'tenebres',
+      onEnterEffects: [],
+    },
+    {
+      key: 'passage',
+      title: 'Le passage secret',
+      text: 'Derrière la porte, un boyau étroit. Un squelette en armure le barre, immobile. Trop immobile.',
+      backgroundUrl: '/uploads/passage-secret.png',
+      isEnding: false,
+      ...noCombat,
+      onEnterEffects: [],
+    },
+    {
+      key: 'gardien',
+      title: "Le gardien s'éveille",
+      text: "Les orbites s'allument. La hallebarde se lève.",
+      backgroundUrl: '/uploads/passage-secret.png',
+      isEnding: false,
+      enemyKey: 'gardien',
+      winSceneKey: 'tresor',
+      loseSceneKey: 'tenebres',
+      onEnterEffects: [],
+    },
+    {
+      key: 'tresor',
+      title: 'La chambre du trésor',
+      text: "L'or de la Reine Grise brille sous ta torche. Tu n'es plus un simple pilleur : tu es celui qui est revenu.",
+      backgroundUrl: '/uploads/chambre-tresor.png',
+      isEnding: true,
+      ...noCombat,
+      onEnterEffects: [{ type: 'stat', statKey: 'courage', delta: 1 }],
+    },
+    {
+      key: 'tenebres',
+      title: 'Les ténèbres',
+      text: "Ta torche roule sur les dalles et s'éteint. La crypte garde ses secrets, et toi avec.",
+      backgroundUrl: null,
+      isEnding: true,
+      ...noCombat,
+      onEnterEffects: [],
+    },
+  ],
+  choices: [
+    { fromKey: 'entree', toKey: 'couloir', label: "Descendre l'escalier", condition: null, effects: [] },
+    { fromKey: 'entree', toKey: 'gravats', label: 'Fouiller les gravats', condition: null, effects: [] },
+    {
+      fromKey: 'gravats',
+      toKey: 'couloir',
+      label: 'Descendre, la clé en poche',
+      condition: null,
+      effects: [{ type: 'stat', statKey: 'courage', delta: 1 }],
+    },
+    {
+      fromKey: 'couloir',
+      toKey: 'passage',
+      label: 'Ouvrir la porte scellée',
+      condition: { type: 'item', itemKey: 'cle', op: 'has' },
+      effects: [{ type: 'item', itemKey: 'cle', qty: -1 }],
+    },
+    { fromKey: 'couloir', toKey: 'nid', label: 'Suivre les grattements', condition: null, effects: [] },
+    { fromKey: 'couloir', toKey: 'antichambre', label: 'Marcher vers la lueur', condition: null, effects: [] },
+    {
+      fromKey: 'passage',
+      toKey: 'tresor',
+      label: 'Te glisser le long du mur',
+      condition: { type: 'stat', statKey: 'courage', op: '>=', value: 5 },
+      effects: [],
+    },
+    { fromKey: 'passage', toKey: 'gardien', label: 'Affronter le gardien', condition: null, effects: [] },
+    {
+      fromKey: 'passage',
+      toKey: 'couloir',
+      label: 'Rebrousser chemin',
+      condition: null,
+      effects: [{ type: 'stat', statKey: 'courage', delta: -1 }],
     },
   ],
 };
