@@ -2,7 +2,8 @@ import { argon2id, hash, verify } from 'argon2';
 import { eq } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { users } from '../../db/schema/index.js';
-import { conflict, HttpError } from '../../lib/errors.js';
+import { conflict, HttpError, isUniqueViolation } from '../../lib/errors.js';
+import { collectUserImages, purgeUnusedImages } from '../../lib/images.js';
 import type { Role, UserPublic } from './schemas.js';
 
 /** L'unicité et la connexion ignorent la casse : tout est stocké en minuscules. */
@@ -25,20 +26,6 @@ function toPublic(user: typeof users.$inferSelect): UserPublic {
 async function findById(id: string): Promise<typeof users.$inferSelect | null> {
   const [user] = await db.select().from(users).where(eq(users.id, id));
   return user ?? null;
-}
-
-/**
- * Violation de contrainte unique Postgres (23505). Drizzle enveloppe l'erreur pg dans
- * `DrizzleQueryError` (`.cause` porte l'erreur d'origine) : on regarde les deux niveaux
- * pour rester robuste si un jour l'erreur n'est plus enveloppée.
- */
-function isUniqueViolation(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false;
-  }
-  const code = (error as { code?: unknown }).code;
-  const causeCode = (error.cause as { code?: unknown } | undefined)?.code;
-  return code === '23505' || causeCode === '23505';
 }
 
 /** Utilisé par le plugin d'auth : vérifie que le `sub` du token existe encore en base. */
@@ -115,4 +102,15 @@ export async function updateMe(
 
   const [updated] = await db.update(users).set(updates).where(eq(users.id, userId)).returning();
   return toPublic(updated);
+}
+
+/**
+ * Droit à l'effacement (RGPD) : supprime le compte et, en cascade, tout ce qui s'y rattache
+ * (histoires écrites, médiathèque, parties, favoris, avis), puis les fichiers images correspondants.
+ * Les parties d'autres joueurs sur ses histoires disparaissent avec elles.
+ */
+export async function deleteAccount(userId: string): Promise<void> {
+  const urls = await collectUserImages(userId);
+  await db.delete(users).where(eq(users.id, userId));
+  await purgeUnusedImages(urls);
 }

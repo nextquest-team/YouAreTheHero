@@ -79,7 +79,8 @@ export const fr = {
     sceneLabel: 'Scène',
     deleteStory: "Supprimer l'histoire",
     deleteTitle: 'Supprimer cette histoire ?',
-    deleteMessage: 'Ses scènes, stats, ennemis et objets seront supprimés aussi. Les parties des joueurs seront perdues.',
+    deleteMessage:
+      'Ses scènes, stats, ennemis et objets seront supprimés aussi, avec leurs images. Les parties des joueurs seront perdues.',
   },
   stats: {
     title: 'Caractéristiques',
@@ -360,6 +361,12 @@ export const fr = {
     finished: 'Tu as terminé cette histoire.',
     dead: 'Ton héros est tombé dans cette histoire.',
     notFound: 'Cette histoire n’est plus disponible.',
+    authorHint: 'Voir toutes les histoires de cet auteur',
+  },
+  author: {
+    overline: 'Auteur',
+    count: (count: number) => `${count} histoire${count > 1 ? 's' : ''} publiée${count > 1 ? 's' : ''}`,
+    empty: 'Cet auteur n’a plus d’histoire publiée.',
   },
   saves: {
     title: 'Mes parties',
@@ -459,6 +466,7 @@ export const fr = {
     NETWORK_ERROR: 'Impossible de joindre le serveur. Vérifie le Wi-Fi et l’adresse de l’API.',
     INVALID_CREDENTIALS: 'E-mail ou mot de passe incorrect.',
     EMAIL_TAKEN: 'Un compte existe déjà avec cet e-mail.',
+    TITLE_TAKEN: 'Tu as déjà une histoire avec ce titre.',
     VALIDATION_ERROR: 'Certains champs sont invalides.',
     NOT_FOUND: 'Élément introuvable.',
     UNAUTHORIZED: 'Ta session a expiré, reconnecte-toi.',
@@ -493,5 +501,13 @@ export const fr = {
     hero: 'Mon héros',
     heroHint: 'Ton visage, utilisé dans toutes les histoires',
     changeFace: 'Changer mon visage',
+    account: 'Compte',
+    deleteAccount: 'Supprimer mon compte',
+    deleteAccountTitle: 'Supprimer ton compte ?',
+    deleteAccountPlayer: 'Ton profil, ton visage de héros, tes parties et tes favoris seront effacés définitivement.',
+    deleteAccountCreator:
+      'Ton profil, tes histoires (publiées comprises), ta médiathèque et leurs images seront effacés définitivement. Les parties des joueurs sur tes histoires seront perdues.',
+    deleteAccountConfirm: 'Supprimer définitivement',
+    deleteAccountError: 'Le compte n’a pas pu être supprimé. Réessaie.',
   },
 } as const;

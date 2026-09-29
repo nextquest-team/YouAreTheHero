@@ -102,9 +102,20 @@ export default function StoryDetailScreen() {
                 {data.title}
               </Text>
               <View style={styles.metaRow}>
-                <Text style={[typography.caption, { color: colors.textMuted }]}>
-                  {fr.storyDetail.by} {data.author.displayName}
-                </Text>
+                <Pressable
+                  onPress={() =>
+                    router.push({ pathname: '/author/[id]', params: { id: data.author.id, name: data.author.displayName } })
+                  }
+                  accessibilityRole="link"
+                  accessibilityLabel={`${fr.storyDetail.by} ${data.author.displayName}`}
+                  accessibilityHint={fr.storyDetail.authorHint}
+                  hitSlop={12}
+                >
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>
+                    {fr.storyDetail.by}{' '}
+                    <Text style={[styles.authorLink, { color: colors.text }]}>{data.author.displayName}</Text>
+                  </Text>
+                </Pressable>
                 <View style={[styles.badge, { borderColor: colors.border }]}>
                   <Text style={[styles.badgeText, { color: colors.textSoft }]}>{data.genre}</Text>
                 </View>
@@ -223,6 +234,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   badgeText: { fontFamily: fonts.bodyBold, fontSize: 12 },
+  authorLink: { fontFamily: fonts.bodyBold, textDecorationLine: 'underline' },
   summaryBox: {
     padding: 18,
     borderTopLeftRadius: 4,

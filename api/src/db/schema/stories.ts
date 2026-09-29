@@ -8,6 +8,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 import type { Condition, Effect, ExtraStat } from '../../engine/schemas.js';
@@ -43,6 +44,8 @@ export const stories = pgTable(
   (table) => [
     index('stories_published_idx').on(table.published),
     index('stories_author_id_idx').on(table.authorId),
+    // Un créateur ne peut pas avoir deux histoires du même titre (casse ignorée) ; deux créateurs, si.
+    uniqueIndex('stories_author_title_idx').on(table.authorId, sql`lower(${table.title})`),
   ],
 );
 

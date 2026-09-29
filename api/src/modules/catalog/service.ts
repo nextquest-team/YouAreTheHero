@@ -85,6 +85,10 @@ export async function listPublished(userId: string, filters: ListStoriesQuery): 
     conditions.push(sql`lower(${stories.genre}) = lower(${genre})`);
   }
 
+  if (filters.authorId) {
+    conditions.push(eq(stories.authorId, filters.authorId));
+  }
+
   const rows = await db
     .select(storyRowColumns)
     .from(stories)

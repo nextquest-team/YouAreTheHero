@@ -12,6 +12,8 @@ export type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
+  // Supprime le compte côté API puis déconnecte ; lève l'erreur de l'API en cas d'échec.
+  deleteAccount: () => Promise<void>;
   setUser: (user: User) => void;
 };
 
@@ -75,6 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await signIn(token, me);
       },
       logout,
+      deleteAccount: async () => {
+        await authApi.deleteMe();
+        await logout();
+      },
       setUser: setUserState,
     }),
     [isLoading, user, logout, signIn],
