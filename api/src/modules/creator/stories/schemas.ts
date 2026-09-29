@@ -1,6 +1,8 @@
 import { z } from 'zod';
-import { conditionSchema, effectSchema, extraStatSchema } from '../../../engine/schemas.js';
 import { uploadPathSchema } from '../../../lib/schemas.js';
+import { enemySchema } from '../enemies/schemas.js';
+import { itemSchema } from '../items/schemas.js';
+import { sceneSchema } from '../scenes/schemas.js';
 import { statSchema } from '../stats/schemas.js';
 
 export const idParamSchema = z.object({ id: z.uuid() });
@@ -21,53 +23,6 @@ export const storySchema = z.object({
   updatedAt: z.iso.datetime(),
 });
 export type StoryDto = z.infer<typeof storySchema>;
-
-// Formes minimales des entités enfants, juste de quoi assembler l'histoire complète :
-// A les remplacera par les schémas dédiés de ses modules enemies/items/scenes/choices.
-
-const enemySchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  imageUrl: z.string().nullable(),
-  attack: z.number(),
-  hp: z.number(),
-  shield: z.number(),
-  extraStats: z.array(extraStatSchema),
-  defeatEffects: z.array(effectSchema),
-  sortOrder: z.number(),
-});
-
-const itemSchema = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  description: z.string().nullable(),
-  imageUrl: z.string().nullable(),
-  useEffects: z.array(effectSchema).nullable(),
-  sortOrder: z.number(),
-});
-
-const choiceSchema = z.object({
-  id: z.uuid(),
-  toSceneId: z.uuid(),
-  label: z.string(),
-  condition: conditionSchema.nullable(),
-  effects: z.array(effectSchema),
-  sortOrder: z.number(),
-});
-
-const sceneSchema = z.object({
-  id: z.uuid(),
-  title: z.string(),
-  text: z.string(),
-  backgroundUrl: z.string().nullable(),
-  isEnding: z.boolean(),
-  enemyId: z.uuid().nullable(),
-  winSceneId: z.uuid().nullable(),
-  loseSceneId: z.uuid().nullable(),
-  onEnterEffects: z.array(effectSchema),
-  sortOrder: z.number(),
-  choices: z.array(choiceSchema),
-});
 
 export const storyFullSchema = storySchema.extend({
   stats: z.array(statSchema),

@@ -9,7 +9,11 @@ import { env } from './config/env.js';
 import { MAX_UPLOAD_BYTES } from './lib/uploads.js';
 import authRoutes from './modules/auth/routes.js';
 import catalogRoutes from './modules/catalog/routes.js';
+import creatorChoicesRoutes from './modules/creator/choices/routes.js';
+import creatorEnemiesRoutes from './modules/creator/enemies/routes.js';
+import creatorItemsRoutes from './modules/creator/items/routes.js';
 import creatorMediaRoutes from './modules/creator/media/routes.js';
+import creatorScenesRoutes from './modules/creator/scenes/routes.js';
 import creatorStatsRoutes from './modules/creator/stats/routes.js';
 import creatorStoriesRoutes from './modules/creator/stories/routes.js';
 import playRoutes from './modules/play/routes.js';
@@ -55,6 +59,10 @@ export async function buildApp(opts: { logger?: boolean; roll?: () => number } =
   await app.register(creatorStoriesRoutes);
   await app.register(creatorMediaRoutes);
   await app.register(creatorStatsRoutes);
+  await app.register(creatorEnemiesRoutes);
+  await app.register(creatorItemsRoutes);
+  await app.register(creatorScenesRoutes);
+  await app.register(creatorChoicesRoutes);
   await app.register(catalogRoutes);
   await app.register(playRoutes);
 
