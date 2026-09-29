@@ -15,28 +15,28 @@ export default function PlayerTabsLayout() {
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.text,
         tabBarStyle: { backgroundColor: colors.tabBar, borderTopColor: colors.borderStrong, borderTopWidth: hairline },
-        tabBarLabelStyle: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase' },
+        tabBarLabelStyle: { fontFamily: fonts.monoBold, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: fr.playerTabs.stories,
-          tabBarIcon: ({ color, size, focused }) => <TabIcon name="book-open" color={color} size={size} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="book" color={color} size={22} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="saves"
         options={{
           title: fr.playerTabs.saves,
-          tabBarIcon: ({ color, size, focused }) => <TabIcon name="bookmark" color={color} size={size} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="file-text" color={color} size={22} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: fr.playerTabs.profile,
-          tabBarIcon: ({ color, size, focused }) => <TabIcon name="user" color={color} size={size} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="user" color={color} size={22} focused={focused} />,
         }}
       />
     </Tabs>

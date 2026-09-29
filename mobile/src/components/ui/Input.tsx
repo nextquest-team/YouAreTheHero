@@ -2,14 +2,16 @@ import { useId } from 'react';
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
-import { fonts, hairline, radius, spacing } from '@/theme';
+import { fonts, hairline, radius, spacing, touchTarget } from '@/theme';
 
 type Props = TextInputProps & {
   label: string;
   error?: string | null;
+  // Souligné : un simple trait d'encre, pour la recherche en tête de bibliothèque
+  variant?: 'boxed' | 'underline';
 };
 
-export function Input({ label, error, multiline, style, ...rest }: Props) {
+export function Input({ label, error, multiline, variant = 'boxed', style, ...rest }: Props) {
   const { colors } = useTheme();
   const id = useId();
 
@@ -26,12 +28,10 @@ export function Input({ label, error, multiline, style, ...rest }: Props) {
         style={[
           styles.input,
           multiline && styles.multiline,
-          {
-            backgroundColor: colors.surface,
-            borderColor: error ? colors.danger : colors.borderStrong,
-            borderWidth: error ? 2 : hairline,
-            color: colors.text,
-          },
+          { borderColor: error ? colors.danger : colors.borderStrong, color: colors.text },
+          variant === 'boxed'
+            ? { backgroundColor: colors.surface, borderWidth: error ? 2 : hairline }
+            : [styles.underline, { borderBottomWidth: error ? 2 : hairline }],
           style,
         ]}
         {...rest}
@@ -55,6 +55,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 17,
   },
+  underline: { minHeight: touchTarget, borderRadius: 0, paddingHorizontal: 0 },
   multiline: {
     minHeight: 96,
     paddingVertical: spacing.md,

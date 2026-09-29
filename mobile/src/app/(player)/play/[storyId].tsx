@@ -8,12 +8,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DropCapText } from '@/components/common/DropCapText';
 import { Hatch } from '@/components/common/Hatch';
 import { LoadState } from '@/components/common/LoadState';
+import { AdventureSheet } from '@/components/game/AdventureSheet';
 import { ChangesStrip } from '@/components/game/ChangesStrip';
 import { ChoiceList } from '@/components/game/ChoiceList';
-import { CombatPanel } from '@/components/game/CombatPanel';
+import { CombatScreen } from '@/components/game/CombatScreen';
 import { EndScreen } from '@/components/game/EndScreen';
 import { HeroBar } from '@/components/game/HeroBar';
-import { InventorySheet } from '@/components/game/InventorySheet';
 import { useGame } from '@/hooks/useGame';
 import { useStory } from '@/hooks/useStories';
 import { useTheme } from '@/hooks/useTheme';
@@ -29,7 +29,7 @@ export default function PlayScreen() {
   const insets = useSafeAreaInsets();
   const { game, loading, busy, error, reload, choose, attack, consumeItem, restart } = useGame(storyId);
   const storyMeta = useStory(storyId);
-  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // Le premier focus correspond au montage (état "started" déjà à jour, avec ses changements
   // de scène de départ) : on ne relit la partie qu'aux focus suivants, par exemple au retour
@@ -67,7 +67,32 @@ export default function PlayScreen() {
     );
   }
 
-  const face = assetUrl(game?.heroFaceUrl);
+  const storyTitle = storyMeta.data?.title ?? '';
+  const sheet = game ? (
+    <AdventureSheet
+      visible={sheetOpen}
+      game={game}
+      storyTitle={storyTitle}
+      canUse={!over}
+      busy={busy}
+      onUse={consumeItem}
+      onEditFace={() => {
+        setSheetOpen(false);
+        router.push({ pathname: '/selfie', params: { storyId: game.storyId } });
+      }}
+      onClose={() => setSheetOpen(false)}
+    />
+  ) : null;
+
+  // Combat : l'écran entier passe à l'encre, la scène reprend une fois l'adversaire vaincu.
+  if (game?.combat) {
+    return (
+      <View style={styles.root}>
+        <CombatScreen game={{ ...game, combat: game.combat }} busy={busy} error={error} onAttack={attack} onUse={consumeItem} onQuit={() => router.back()} />
+        {sheet}
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
@@ -75,34 +100,17 @@ export default function PlayScreen() {
         <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={fr.game.quit} style={styles.iconButton}>
           <Feather name="chevron-left" size={24} color={colors.text} />
         </Pressable>
-        <View style={styles.headerText}>
-          <Text style={[typography.overline, styles.center, { color: colors.text }]} numberOfLines={1}>
-            {storyMeta.data?.title ?? ''}
-          </Text>
-          {game ? (
-            <View style={styles.saved} accessible accessibilityLabel={fr.game.saved}>
-              <Feather name="check" size={12} color={colors.success} />
-              <Text style={[styles.savedText, { color: colors.success }]}>{fr.game.saved}</Text>
-            </View>
-          ) : null}
-        </View>
+        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
+          {storyTitle}
+        </Text>
         {game ? (
           <Pressable
-            onPress={() => router.push({ pathname: '/selfie', params: { storyId: game.storyId } })}
+            onPress={() => setSheetOpen(true)}
             accessibilityRole="button"
-            accessibilityLabel={fr.game.heroFaceButton}
+            accessibilityLabel={fr.game.openSheet}
             style={styles.iconButton}
           >
-            {/* Portrait en ovale à double filet, comme sur la feuille d'aventure */}
-            <View style={[styles.faceRing, { borderColor: colors.borderStrong }]}>
-              <View style={[styles.face, { borderColor: colors.borderStrong, backgroundColor: colors.surfaceAlt }]}>
-                {face ? (
-                  <Image source={face} style={styles.faceImage} contentFit="cover" accessibilityLabel={fr.game.heroAlt} />
-                ) : (
-                  <Feather name="user" size={16} color={colors.text} />
-                )}
-              </View>
-            </View>
+            <Feather name="file-text" size={22} color={colors.text} />
           </Pressable>
         ) : (
           <View style={styles.iconButton} />
@@ -114,7 +122,11 @@ export default function PlayScreen() {
           {backdrop ? (
             <Image source={backdrop} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} accessibilityIgnoresInvertColors />
           ) : (
-            <Hatch color={colors.text} />
+            <>
+              {/* Contre-hachures de gravure : deux trames croisées */}
+              <Hatch color={colors.text} />
+              <Hatch color={colors.text} angle={45} gap={9} opacity={0.18} />
+            </>
           )}
         </View>
 
@@ -149,11 +161,7 @@ export default function PlayScreen() {
                 </Text>
               ) : null}
 
-              {game.combat ? (
-                <CombatPanel combat={game.combat} busy={busy} onAttack={attack} />
-              ) : (
-                <ChoiceList choices={game.choices} disabled={busy} onChoose={choose} />
-              )}
+              <ChoiceList choices={game.choices} disabled={busy} onChoose={choose} />
             </>
           )}
         </View>
@@ -161,20 +169,11 @@ export default function PlayScreen() {
 
       {game ? (
         <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
-          <HeroBar game={game} itemCount={itemCount} onOpenInventory={() => setInventoryOpen(true)} />
+          <HeroBar game={game} itemCount={itemCount} onOpenSheet={() => setSheetOpen(true)} />
         </View>
       ) : null}
 
-      {game ? (
-        <InventorySheet
-          visible={inventoryOpen}
-          items={game.inventory}
-          canUse={!over}
-          busy={busy}
-          onUse={consumeItem}
-          onClose={() => setInventoryOpen(false)}
-        />
-      ) : null}
+      {sheet}
     </View>
   );
 }
@@ -186,25 +185,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
+    padding: spacing.md,
     borderBottomWidth: hairline,
   },
-  headerText: { flex: 1, alignItems: 'center', gap: 2 },
-  center: { textAlign: 'center' },
+  headerTitle: { flex: 1, textAlign: 'center', fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase' },
   iconButton: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center' },
-  saved: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  savedText: { fontFamily: fonts.mono, fontSize: 11 },
-  faceRing: { width: 40, height: 44, borderRadius: 22, borderWidth: 1, padding: 2 },
-  face: {
-    flex: 1,
-    borderRadius: 20,
-    borderWidth: hairline,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  faceImage: { width: '100%', height: '100%' },
   backdrop: { height: BACKDROP_HEIGHT, overflow: 'hidden', borderBottomWidth: hairline },
   body: { paddingHorizontal: 22, paddingTop: 22, gap: 14 },
   paragraphMark: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

@@ -1,9 +1,10 @@
-import Feather from '@expo/vector-icons/Feather';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
-import { fonts, hairline, spacing, touchTarget } from '@/theme';
+import { fonts, hairline, radius, spacing, touchTarget } from '@/theme';
+
+const CHIP_HEIGHT = 36;
 
 type Props = { genres: string[]; value: string | null; onChange: (genre: string | null) => void };
 
@@ -26,6 +27,8 @@ export function GenreChips({ genres, value, onChange }: Props) {
             accessibilityRole="button"
             accessibilityLabel={option.label}
             accessibilityState={{ selected }}
+            // Pastille de 36 comme sur la maquette, zone tactile étendue à 44
+            hitSlop={{ top: 4, bottom: 4 }}
             style={[
               styles.chip,
               selected
@@ -33,8 +36,7 @@ export function GenreChips({ genres, value, onChange }: Props) {
                 : { backgroundColor: 'transparent', borderColor: colors.borderStrong },
             ]}
           >
-            {/* Sélection lisible sans la couleur : pastille pleine + coche */}
-            {selected ? <Feather name="check" size={14} color={colors.onPrimary} /> : null}
+            {/* Sélection lisible sans la couleur : pastille pleine contre simple contour */}
             <Text style={[styles.label, { color: selected ? colors.onPrimary : colors.text }]}>{option.label}</Text>
           </Pressable>
         );
@@ -44,15 +46,15 @@ export function GenreChips({ genres, value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  row: { gap: spacing.sm },
+  // Marge verticale : la zone tactile étendue reste dans le défilement
+  row: { gap: spacing.sm, paddingVertical: (touchTarget - CHIP_HEIGHT) / 2 },
   chip: {
-    minHeight: touchTarget,
-    paddingHorizontal: spacing.lg,
-    borderRadius: touchTarget / 2,
+    minHeight: CHIP_HEIGHT,
+    paddingHorizontal: 14,
+    borderRadius: radius.pill,
     borderWidth: hairline,
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
   },
-  label: { fontFamily: fonts.monoBold, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase' },
+  label: { fontFamily: fonts.monoBold, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
 });

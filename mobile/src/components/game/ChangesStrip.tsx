@@ -1,4 +1,3 @@
-import Feather from '@expo/vector-icons/Feather';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
@@ -10,7 +9,7 @@ type Props = { changes: GameState['changes'] };
 
 /**
  * Ce que la dernière action a changé (« +1 Clé rouillée », « Force 5 → 6 »), en tampons
- * penchés, annoncé par VoiceOver. Gain et perte se distinguent aussi par une flèche.
+ * penchés, annoncé par VoiceOver. Le signe écrit distingue gain et perte, pas la couleur.
  */
 export function ChangesStrip({ changes }: Props) {
   const { colors } = useTheme();
@@ -31,7 +30,6 @@ export function ChangesStrip({ changes }: Props) {
             key={`${change.label}-${index}`}
             style={[styles.stamp, { borderColor: color, transform: [{ rotate: index % 2 === 0 ? '-2deg' : '1.5deg' }] }]}
           >
-            <Feather name={gain ? 'arrow-up' : 'arrow-down'} size={13} color={color} />
             <Text style={[styles.label, { color }]}>{change.label}</Text>
           </View>
         );
@@ -41,14 +39,11 @@ export function ChangesStrip({ changes }: Props) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingVertical: 2 },
   stamp: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
     borderWidth: 2,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   label: { fontFamily: fonts.monoBold, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
 });

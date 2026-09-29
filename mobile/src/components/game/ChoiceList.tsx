@@ -10,6 +10,12 @@ type Props = { choices: GameState['choices']; disabled: boolean; onChoose: (choi
 
 const letterOf = (index: number) => String.fromCharCode(65 + index);
 
+// « Avec Clé rouillée » (libellé de l'API) devient « Il te faut : Clé rouillée »
+const requirement = (conditionLabel: string | null) => {
+  if (!conditionLabel) return fr.game.locked;
+  return `${fr.game.youNeed} ${conditionLabel.replace(/^Avec /, '')}`;
+};
+
 /**
  * Choix de la scène, lettrés A, B, C comme dans un livre-jeu. Un choix verrouillé reste
  * visible : pointillés, cadenas et condition écrite, jamais la couleur seule.
@@ -30,14 +36,14 @@ export function ChoiceList({ choices, disabled, onChoose }: Props) {
             accessible
             accessibilityRole="button"
             accessibilityState={{ disabled: true }}
-            accessibilityLabel={`${fr.game.choiceLetter} ${letter}, ${choice.label}, ${fr.game.locked}${choice.conditionLabel ? ` : ${choice.conditionLabel}` : ''}`}
+            accessibilityLabel={`${fr.game.choiceLetter} ${letter}, ${choice.label}, ${fr.game.locked}. ${requirement(choice.conditionLabel)}`}
             style={[styles.choice, styles.locked, { borderColor: colors.textMuted }]}
           >
             <Text style={[styles.letter, { color: colors.textMuted }]}>{letter}</Text>
             <View style={styles.lockedText}>
               <Text style={[styles.label, { color: colors.textMuted }]}>{choice.label}</Text>
               <Text style={[styles.condition, { color: colors.textMuted }]}>
-                {choice.conditionLabel ? `${fr.game.locked} · ${choice.conditionLabel}` : fr.game.locked}
+                {requirement(choice.conditionLabel)}
               </Text>
             </View>
             <Feather name="lock" size={18} color={colors.textMuted} />
@@ -72,7 +78,7 @@ export function ChoiceList({ choices, disabled, onChoose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  list: { gap: spacing.md, paddingRight: 4, paddingBottom: 4 },
+  list: { gap: spacing.md, paddingTop: 12, paddingRight: 4, paddingBottom: 4 },
   choice: {
     minHeight: 60,
     paddingHorizontal: 14,
@@ -85,8 +91,8 @@ const styles = StyleSheet.create({
   },
   pressed: { transform: [{ translateX: 2 }, { translateY: 2 }], boxShadow: 'none' },
   locked: { borderStyle: 'dashed', backgroundColor: 'transparent' },
-  letter: { fontFamily: fonts.monoBold, fontSize: 14 },
-  label: { flex: 1, fontFamily: fonts.display, fontSize: 20, lineHeight: 23 },
+  letter: { fontFamily: fonts.monoBold, fontSize: 13 },
+  label: { flex: 1, fontFamily: fonts.display, fontSize: 20, lineHeight: 22 },
   lockedText: { flex: 1, gap: 2 },
-  condition: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
+  condition: { fontFamily: fonts.mono, fontSize: 11, textTransform: 'uppercase' },
 });
