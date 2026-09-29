@@ -1,7 +1,7 @@
 import Feather from '@expo/vector-icons/Feather';
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -29,6 +29,20 @@ export default function PlayScreen() {
   const { game, loading, busy, error, reload, choose, attack, consumeItem, restart } = useGame(storyId);
   const storyMeta = useStory(storyId);
   const [inventoryOpen, setInventoryOpen] = useState(false);
+
+  // Le premier focus correspond au montage (état "started" déjà à jour, avec ses changements
+  // de scène de départ) : on ne relit la partie qu'aux focus suivants, par exemple au retour
+  // de l'écran selfie, pour refléter la nouvelle photo du héros sans écraser ces changements.
+  const hasFocusedOnce = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasFocusedOnce.current) {
+        hasFocusedOnce.current = true;
+        return;
+      }
+      reload();
+    }, [reload]),
+  );
 
   const backdrop = assetUrl(game?.scene.backgroundUrl);
   const over = game ? game.status !== 'IN_PROGRESS' : false;

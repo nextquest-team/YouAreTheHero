@@ -33,6 +33,12 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "You Are The Hero utilise la caméra frontale pour prendre le selfie de ton héros."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",

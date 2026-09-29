@@ -49,7 +49,7 @@ export default function Library() {
           </Text>
         </View>
         <Pressable
-          onPress={() => router.navigate('/profile')}
+          onPress={() => router.push('/selfie')}
           accessibilityRole="button"
           accessibilityLabel={fr.library.heroButton}
           style={[styles.hero, { borderColor: colors.accent, backgroundColor: colors.surfaceAlt }]}

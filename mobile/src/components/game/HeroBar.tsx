@@ -1,6 +1,7 @@
 import Feather from '@expo/vector-icons/Feather';
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
@@ -22,13 +23,18 @@ export function HeroBar({ game }: Props) {
 
   return (
     <View style={[styles.bar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <View style={[styles.face, { borderColor: colors.accent, backgroundColor: colors.surfaceAlt }]}>
+      <Pressable
+        onPress={() => router.push({ pathname: '/selfie', params: { storyId: game.storyId } })}
+        accessibilityRole="button"
+        accessibilityLabel={fr.game.heroFaceButton}
+        style={[styles.face, { borderColor: colors.accent, backgroundColor: colors.surfaceAlt }]}
+      >
         {face ? (
           <Image source={face} style={styles.faceImage} contentFit="cover" accessibilityLabel={fr.game.heroAlt} />
         ) : (
           <Feather name="user" size={22} color={colors.textMuted} />
         )}
-      </View>
+      </Pressable>
       {hp ? <Gauge label={hp.name} value={Number(hp.value)} max={hp.max} color={gameColors.hpFill} /> : <View style={styles.spacer} />}
       {others.map((stat) => (
         <View key={stat.id} style={[styles.stat, { backgroundColor: colors.surfaceAlt }]} accessible accessibilityLabel={`${stat.name} ${stat.value}`}>
