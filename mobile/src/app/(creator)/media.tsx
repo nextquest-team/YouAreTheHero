@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { LoadState } from '@/components/common/LoadState';
@@ -21,6 +22,10 @@ function usageLines(usedIn: Usage[]): string {
 export default function Media() {
   const { colors } = useTheme();
   const { data, loading, error, reload, busy, actionError, upload, remove } = useMedia();
+  // Taille des vignettes en pixels, 3 par ligne : sur iOS, une largeur en % avec aspectRatio
+  // donnait des vignettes de taille nulle, et expo-image ne charge rien dans une vue vide.
+  const [gridWidth, setGridWidth] = useState(0);
+  const thumbSize = Math.floor((gridWidth - 2 * spacing.sm) / 3);
 
   const handleDelete = async (media: MediaItem) => {
     const result = await remove(media.id);
@@ -65,7 +70,7 @@ export default function Media() {
       ) : data.length === 0 ? (
         <Text style={[typography.body, { color: colors.textMuted }]}>{fr.media.empty}</Text>
       ) : (
-        <View style={styles.grid}>
+        <View style={styles.grid} onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}>
           {data.map((media) => (
             <Pressable
               key={media.id}
@@ -74,12 +79,15 @@ export default function Media() {
               accessibilityRole="button"
               accessibilityLabel={fr.media.imageLabel}
               accessibilityHint={fr.media.deleteHint}
-              style={({ pressed }) => [styles.thumb, { opacity: pressed ? 0.7 : 1 }]}
+              style={({ pressed }) => [styles.thumb, { width: thumbSize, height: thumbSize, opacity: pressed ? 0.7 : 1 }]}
             >
               <Image
                 source={{ uri: assetUrl(media.url) ?? undefined }}
                 style={[StyleSheet.absoluteFill, { backgroundColor: colors.surfaceAlt }]}
                 contentFit="cover"
+                onError={(event) => {
+                  if (__DEV__) console.warn(`[image] ${assetUrl(media.url)}`, event.error);
+                }}
               />
             </Pressable>
           ))}
@@ -93,5 +101,5 @@ const styles = StyleSheet.create({
   header: { gap: 2 },
   status: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  thumb: { width: '31.5%', aspectRatio: 1, borderRadius: radius.md, overflow: 'hidden' },
+  thumb: { borderRadius: radius.md, overflow: 'hidden' },
 });
