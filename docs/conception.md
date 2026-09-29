@@ -94,8 +94,8 @@ Les ennemis utilisent des colonnes `attack`, `hp` et `shield` dédiées : ce son
 
 **Suppressions**
 - Supprimer une histoire supprime en cascade tout ce qui en dépend : stats, ennemis, scènes, choix, saves, favoris, avis.
-- Supprimer une scène supprime aussi les choix qui y mènent. Les champs `start_scene_id`, `win_scene_id` et `lose_scene_id` qui la visaient passent à `NULL`.
-- Supprimer un ennemi remet `enemy_id` à `NULL` sur les scènes concernées.
+- `DELETE /me/scenes/:sceneId` renvoie `409 SCENE_IN_USE { usedIn: [...] }` tant qu'elle est la scène de départ, l'issue d'un combat (`win_scene_id` / `lose_scene_id`) ou la cible d'un choix d'une autre scène. Sinon la scène est supprimée avec ses propres choix. En base, les clés étrangères restent un filet de sécurité : les choix qui y mènent sont supprimés, et `start_scene_id`, `win_scene_id` et `lose_scene_id` passent à `NULL`.
+- `DELETE /me/enemies/:enemyId` renvoie `409 ENEMY_IN_USE { usedIn: [...] }` tant qu'une scène le combat (sinon la base remettrait `enemy_id` à `NULL` et la scène deviendrait une impasse).
 - `DELETE /me/items/:itemId` renvoie `409 { usedIn: [...] }` si l'objet apparaît dans une condition ou un effet (choix, scène, autre objet ou butin d'un ennemi). C'est la même logique que pour les stats.
 - `DELETE /me/media/:mediaId` renvoie `409 { usedIn: [...] }` si l'image sert encore de couverture, de décor, ou d'image d'ennemi ou d'objet. Sinon, la ligne et le fichier sont supprimés.
 - Supprimer une stat met `stories.attack_stat_id` et `stories.hp_stat_id` à `NULL` (`ON DELETE SET NULL`).
@@ -319,9 +319,12 @@ PATCH  /me/choices/:choiceId  DELETE /me/choices/:choiceId
 # toute route d'édition /me/... → 409 si l'histoire est publiée
 # DELETE /me/stats/:statId → 409 { usedIn: [...] } si la stat est utilisée
 # DELETE /me/items/:itemId → 409 { usedIn: [...] } si l'objet est utilisé
+# DELETE /me/enemies/:enemyId → 409 ENEMY_IN_USE { usedIn: [...] } si une scène le combat
+# DELETE /me/scenes/:sceneId → 409 SCENE_IN_USE { usedIn: [...] } si elle est la scène de départ, une issue de combat ou la cible d'un choix
 # DELETE /me/media/:mediaId → 409 { usedIn: [...] } si l'image est utilisée
-# POST /me/scenes/:sceneId/choices → 422 si la scène est une scène de combat
-# PATCH /me/scenes/:sceneId { enemyId } → 422 si la scène a déjà des choix, ou si l'histoire est sans combats
+# POST /me/scenes/:sceneId/choices → 422 COMBAT_SCENE si la scène est une scène de combat
+# PATCH /me/scenes/:sceneId { enemyId } → 422 SCENE_HAS_CHOICES si la scène a déjà des choix, ou 422 COMBAT_DISABLED si l'histoire est sans combats (aussi au POST)
+# id cité (scène, ennemi, stat, objet) hors de l'histoire, ou stat texte dans une condition/un effet → 422 INVALID_REFERENCE { field }
 # PATCH /me/stories/:id { hasCombat: false } → 422 si des scènes ont encore un ennemi
 
 # Médiathèque (A), réservée aux CREATOR, commune à toutes leurs histoires
