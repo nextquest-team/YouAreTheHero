@@ -5,22 +5,23 @@ import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { DropCapText } from '@/components/common/DropCapText';
+import { Hatch } from '@/components/common/Hatch';
 import { LoadState } from '@/components/common/LoadState';
+import { AdventureSheet } from '@/components/game/AdventureSheet';
 import { ChangesStrip } from '@/components/game/ChangesStrip';
 import { ChoiceList } from '@/components/game/ChoiceList';
-import { CombatPanel } from '@/components/game/CombatPanel';
+import { CombatScreen } from '@/components/game/CombatScreen';
 import { EndScreen } from '@/components/game/EndScreen';
-import { gameColors } from '@/components/game/gameColors';
 import { HeroBar } from '@/components/game/HeroBar';
-import { InventorySheet } from '@/components/game/InventorySheet';
 import { useGame } from '@/hooks/useGame';
 import { useStory } from '@/hooks/useStories';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
 import { assetUrl } from '@/services/client';
-import { fonts, radius, spacing, touchTarget, typography } from '@/theme';
+import { fonts, hairline, spacing, touchTarget, typography } from '@/theme';
 
-const BACKDROP_HEIGHT = 300;
+const BACKDROP_HEIGHT = 210;
 
 export default function PlayScreen() {
   const { storyId } = useLocalSearchParams<{ storyId: string }>();
@@ -28,7 +29,7 @@ export default function PlayScreen() {
   const insets = useSafeAreaInsets();
   const { game, loading, busy, error, reload, choose, attack, consumeItem, restart } = useGame(storyId);
   const storyMeta = useStory(storyId);
-  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // Le premier focus correspond au montage (état "started" déjà à jour, avec ses changements
   // de scène de départ) : on ne relit la partie qu'aux focus suivants, par exemple au retour
@@ -66,94 +67,113 @@ export default function PlayScreen() {
     );
   }
 
+  const storyTitle = storyMeta.data?.title ?? '';
+  const sheet = game ? (
+    <AdventureSheet
+      visible={sheetOpen}
+      game={game}
+      storyTitle={storyTitle}
+      canUse={!over}
+      busy={busy}
+      onUse={consumeItem}
+      onEditFace={() => {
+        setSheetOpen(false);
+        router.push({ pathname: '/selfie', params: { storyId: game.storyId } });
+      }}
+      onClose={() => setSheetOpen(false)}
+    />
+  ) : null;
+
+  // Combat : l'écran entier passe à l'encre, la scène reprend une fois l'adversaire vaincu.
+  if (game?.combat) {
+    return (
+      <View style={styles.root}>
+        <CombatScreen game={{ ...game, combat: game.combat }} busy={busy} error={error} onAttack={attack} onUse={consumeItem} onQuit={() => router.back()} />
+        {sheet}
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}>
-        <View style={[styles.backdrop, { backgroundColor: colors.surfaceAlt }]}>
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <View style={[styles.header, { borderBottomColor: colors.borderStrong }]}>
+        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={fr.game.quit} style={styles.iconButton}>
+          <Feather name="chevron-left" size={24} color={colors.text} />
+        </Pressable>
+        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
+          {storyTitle}
+        </Text>
+        {game ? (
+          <Pressable
+            onPress={() => setSheetOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel={fr.game.openSheet}
+            style={styles.iconButton}
+          >
+            <Feather name="file-text" size={22} color={colors.text} />
+          </Pressable>
+        ) : (
+          <View style={styles.iconButton} />
+        )}
+      </View>
+
+      <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl }}>
+        <View style={[styles.backdrop, { backgroundColor: colors.surfaceAlt, borderBottomColor: colors.borderStrong }]}>
           {backdrop ? (
             <Image source={backdrop} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} accessibilityIgnoresInvertColors />
-          ) : null}
-          <View style={[styles.topBar, { top: insets.top + spacing.sm }]}>
-            <Pressable
-              onPress={() => router.back()}
-              accessibilityRole="button"
-              accessibilityLabel={fr.game.quit}
-              style={[styles.iconButton, { backgroundColor: colors.background }]}
-            >
-              <Feather name="x" size={22} color={colors.text} />
-            </Pressable>
-            {game ? (
-              <View style={styles.topRight}>
-                <View style={[styles.saved, { backgroundColor: colors.background }]}>
-                  <Feather name="check-circle" size={14} color={colors.success} />
-                  <Text style={[styles.savedText, { color: colors.success }]}>{fr.game.saved}</Text>
-                </View>
-                <Pressable
-                  onPress={() => setInventoryOpen(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${fr.game.inventory}, ${itemCount}`}
-                  style={[styles.iconButton, { backgroundColor: colors.background }]}
-                >
-                  <Feather name="briefcase" size={20} color={colors.accent} />
-                  {itemCount > 0 ? (
-                    <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-                      <Text style={[styles.badgeText, { color: colors.onPrimary }]}>{itemCount}</Text>
-                    </View>
-                  ) : null}
-                </Pressable>
-              </View>
-            ) : null}
-          </View>
+          ) : (
+            <>
+              {/* Contre-hachures de gravure : deux trames croisées */}
+              <Hatch color={colors.text} />
+              <Hatch color={colors.text} angle={45} gap={9} opacity={0.18} />
+            </>
+          )}
         </View>
 
         <View style={styles.body}>
           {!game ? (
-            <View style={styles.pad}>
-              <LoadState loading={loading} error={error} onRetry={reload} />
-            </View>
+            <LoadState loading={loading} error={error} onRetry={reload} />
           ) : (
             <>
-              <View style={styles.heroBar}>
-                <HeroBar game={game} />
+              {/* Ornement de paragraphe : décoratif, VoiceOver commence au titre */}
+              <View style={styles.paragraphMark} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                <Text style={[styles.section, { color: colors.accent }]}>§</Text>
+                <View style={[styles.dashedRule, { borderTopColor: colors.borderStrong }]} />
               </View>
 
-              <View style={styles.pad}>
-                <ChangesStrip changes={game.changes} />
+              <Text accessibilityRole="header" style={[styles.sceneTitle, { color: colors.text }]}>
+                {game.scene.title}
+              </Text>
+              {game.scene.text ? (
+                <DropCapText
+                  text={game.scene.text}
+                  textStyle={{ ...styles.sceneText, color: colors.text }}
+                  capColor={colors.accent}
+                  capFontFamily={fonts.display}
+                />
+              ) : null}
 
-                <View style={[styles.parchment, { backgroundColor: gameColors.parchment }]}>
-                  <Text accessibilityRole="header" style={[styles.sceneTitle, { color: gameColors.inkSoft }]}>
-                    {game.scene.title}
-                  </Text>
-                  <Text style={[styles.sceneText, { color: gameColors.ink }]}>{game.scene.text}</Text>
-                </View>
+              <ChangesStrip changes={game.changes} />
 
-                {error ? (
-                  <Text accessibilityLiveRegion="polite" style={[typography.label, { color: colors.danger }]}>
-                    {error}
-                  </Text>
-                ) : null}
+              {error ? (
+                <Text accessibilityLiveRegion="polite" style={[typography.label, { color: colors.danger }]}>
+                  {error}
+                </Text>
+              ) : null}
 
-                {game.combat ? (
-                  <CombatPanel combat={game.combat} busy={busy} onAttack={attack} />
-                ) : (
-                  <ChoiceList choices={game.choices} disabled={busy} onChoose={choose} />
-                )}
-              </View>
+              <ChoiceList choices={game.choices} disabled={busy} onChoose={choose} />
             </>
           )}
         </View>
       </ScrollView>
 
       {game ? (
-        <InventorySheet
-          visible={inventoryOpen}
-          items={game.inventory}
-          canUse={!over}
-          busy={busy}
-          onUse={consumeItem}
-          onClose={() => setInventoryOpen(false)}
-        />
+        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
+          <HeroBar game={game} itemCount={itemCount} onOpenSheet={() => setSheetOpen(true)} />
+        </View>
       ) : null}
+
+      {sheet}
     </View>
   );
 }
@@ -161,48 +181,21 @@ export default function PlayScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   endContent: { flexGrow: 1 },
-  backdrop: { height: BACKDROP_HEIGHT, overflow: 'hidden' },
-  topBar: {
-    position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderBottomWidth: hairline,
   },
-  topRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  iconButton: {
-    width: touchTarget,
-    height: touchTarget,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saved: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  savedText: { fontFamily: fonts.bodyBold, fontSize: 12 },
-  badge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    paddingHorizontal: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: { fontFamily: fonts.bodyBold, fontSize: 11 },
-  body: { gap: spacing.lg },
-  heroBar: { marginTop: -44, marginHorizontal: spacing.lg },
-  pad: { paddingHorizontal: spacing.lg, gap: spacing.lg },
-  parchment: { padding: 18, borderRadius: radius.xl, gap: 6 },
-  sceneTitle: { ...typography.overline },
-  sceneText: { fontFamily: fonts.display, fontSize: 21, lineHeight: 28 },
+  headerTitle: { flex: 1, textAlign: 'center', fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase' },
+  iconButton: { width: touchTarget, height: touchTarget, alignItems: 'center', justifyContent: 'center' },
+  backdrop: { height: BACKDROP_HEIGHT, overflow: 'hidden', borderBottomWidth: hairline },
+  body: { paddingHorizontal: 22, paddingTop: 22, gap: 14 },
+  paragraphMark: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  section: { fontFamily: fonts.display, fontSize: 52, lineHeight: 56 },
+  dashedRule: { flex: 1, borderTopWidth: hairline, borderStyle: 'dashed' },
+  sceneTitle: { fontFamily: fonts.displayItalic, fontSize: 30, lineHeight: 34 },
+  sceneText: { fontFamily: fonts.body, fontSize: 18, lineHeight: 28 },
+  footer: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
 });

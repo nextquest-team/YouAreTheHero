@@ -114,7 +114,7 @@ export default function MyStories() {
               accessibilityLabel={`${story.title}, ${story.published ? fr.creatorStories.published : fr.creatorStories.draft}`}
               style={styles.row}
             >
-              <StoryCover uri={story.coverUrl} width={64} height={86} />
+              <StoryCover uri={story.coverUrl} title={story.title} width={64} height={86} />
               <View style={styles.rowText}>
                 <Text numberOfLines={2} style={[typography.cardTitle, { color: colors.text }]}>
                   {story.title}

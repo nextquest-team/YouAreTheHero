@@ -1,9 +1,9 @@
-import Feather from '@expo/vector-icons/Feather';
 import { Tabs } from 'expo-router';
 
+import { TabIcon } from '@/components/common/TabIcon';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
-import { fonts } from '@/theme';
+import { fonts, hairline } from '@/theme';
 
 export default function PlayerTabsLayout() {
   const { colors } = useTheme();
@@ -13,30 +13,30 @@ export default function PlayerTabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { backgroundColor: colors.tabBar, borderTopColor: colors.surfaceAlt },
-        tabBarLabelStyle: { fontFamily: fonts.bodyBold, fontSize: 12 },
+        tabBarInactiveTintColor: colors.text,
+        tabBarStyle: { backgroundColor: colors.tabBar, borderTopColor: colors.borderStrong, borderTopWidth: hairline },
+        tabBarLabelStyle: { fontFamily: fonts.monoBold, fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: fr.playerTabs.stories,
-          tabBarIcon: ({ color, size }) => <Feather name="book-open" color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="book" color={color} size={22} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="saves"
         options={{
           title: fr.playerTabs.saves,
-          tabBarIcon: ({ color, size }) => <Feather name="bookmark" color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="file-text" color={color} size={22} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: fr.playerTabs.profile,
-          tabBarIcon: ({ color, size }) => <Feather name="user" color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="user" color={color} size={22} focused={focused} />,
         }}
       />
     </Tabs>

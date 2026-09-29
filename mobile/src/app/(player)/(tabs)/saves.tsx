@@ -83,7 +83,7 @@ export default function Saves() {
                   <View style={[styles.ribbon, { backgroundColor: statusColor[save.status] }]}>
                     <View style={[styles.ribbonNotch, { backgroundColor: colors.background }]} />
                   </View>
-                  <StoryCover uri={save.story.coverUrl} width={56} height={68} />
+                  <StoryCover uri={save.story.coverUrl} title={save.story.title} width={56} height={68} />
                   <View style={styles.body}>
                     <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
                       {save.story.title}

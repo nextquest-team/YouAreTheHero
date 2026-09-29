@@ -3,7 +3,7 @@ import { ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, StyleProp, StyleSheet, Text, ViewStyle } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
-import { fonts, radius, spacing, touchTarget } from '@/theme';
+import { fonts, hairline, offsetShadow, radius, spacing, touchTarget } from '@/theme';
 
 type Variant = 'primary' | 'secondary' | 'dashed' | 'ghost';
 
@@ -30,18 +30,19 @@ export function Button({
 }: Props) {
   const { colors } = useTheme();
 
+  // Principal : bloc d'encre avec son ombre vermillon décalée, qui s'écrase à l'appui.
   const variants: Record<Variant, { container: ViewStyle; text: string }> = {
     primary: {
-      container: { backgroundColor: colors.primary, minHeight: 52 },
+      container: { backgroundColor: colors.primary, minHeight: 52, boxShadow: offsetShadow(colors.accent) },
       text: colors.onPrimary,
     },
     secondary: {
-      container: { backgroundColor: colors.surfaceAlt },
-      text: colors.accent,
+      container: { backgroundColor: colors.surface, borderWidth: hairline, borderColor: colors.borderStrong },
+      text: colors.text,
     },
     dashed: {
-      container: { borderWidth: 2, borderStyle: 'dashed', borderColor: colors.accent, minHeight: 56 },
-      text: colors.accent,
+      container: { borderWidth: hairline, borderStyle: 'dashed', borderColor: colors.borderStrong, minHeight: 56 },
+      text: colors.text,
     },
     ghost: {
       container: { backgroundColor: 'transparent' },
@@ -62,7 +63,9 @@ export function Button({
       style={({ pressed }) => [
         styles.base,
         v.container,
-        { opacity: inactive ? 0.5 : pressed ? 0.8 : 1 },
+        { opacity: inactive ? 0.5 : 1 },
+        pressed && variant === 'primary' && styles.pressed,
+        pressed && variant !== 'primary' && { opacity: 0.7 },
         style,
       ]}
     >
@@ -88,8 +91,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
   },
+  pressed: { transform: [{ translateX: 2 }, { translateY: 2 }], boxShadow: 'none' },
   label: {
-    fontFamily: fonts.bodyBold,
-    fontSize: 16,
+    fontFamily: fonts.monoBold,
+    fontSize: 14,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
 });

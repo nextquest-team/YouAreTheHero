@@ -53,7 +53,7 @@ export function StoryInfoForm({ story, busy, onSave, onCoverChange }: Props) {
   return (
     <View style={styles.form}>
       {locked ? (
-        <StoryCover uri={story.coverUrl} width={COVER_HEIGHT * 0.75} height={COVER_HEIGHT} />
+        <StoryCover uri={story.coverUrl} title={story.title} width={COVER_HEIGHT * 0.75} height={COVER_HEIGHT} />
       ) : (
         <ImagePickerField label={fr.storyEditor.cover} value={story.coverUrl} onChange={onCoverChange} height={COVER_HEIGHT} />
       )}

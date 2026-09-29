@@ -3,7 +3,7 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
-import { fonts, spacing, typography } from '@/theme';
+import { fonts, hairline, spacing, typography } from '@/theme';
 import type { GameState } from '@/types/api';
 
 type Props = {
@@ -40,16 +40,16 @@ export function EndScreen({ game, storyTitle, restarting, error, onRestart, onBa
 
   return (
     <View style={styles.root}>
-      {storyTitle ? <Text style={[typography.caption, { color: colors.textMuted }]}>{storyTitle}</Text> : null}
+      {storyTitle ? <Text style={[typography.overline, { color: colors.textMuted }]}>{storyTitle}</Text> : null}
 
       <View style={styles.wordBlock}>
         <Text accessibilityRole="header" style={[styles.word, { color: accentColor, fontSize: dead ? 84 : 112 }]}>
           {word}
         </Text>
-        <View style={styles.flourish}>
-          <View style={[styles.flourishLine, { backgroundColor: accentColor }]} />
-          <View style={[styles.flourishDot, { borderColor: accentColor }]} />
-          <View style={[styles.flourishLine, { backgroundColor: accentColor }]} />
+        <View style={styles.flourish} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <View style={[styles.flourishLine, { backgroundColor: colors.borderStrong }]} />
+          <Text style={[styles.flourishMark, { color: accentColor }]}>§</Text>
+          <View style={[styles.flourishLine, { backgroundColor: colors.borderStrong }]} />
         </View>
       </View>
 
@@ -57,9 +57,9 @@ export function EndScreen({ game, storyTitle, restarting, error, onRestart, onBa
 
       <View style={styles.recap}>
         {recap.map((row, index) => (
-          <View key={`${index}-${row.label}`} style={[styles.recapRow, index > 0 && { borderTopWidth: 1, borderTopColor: colors.border }]}>
+          <View key={`${index}-${row.label}`} style={[styles.recapRow, { borderTopWidth: hairline, borderTopColor: colors.borderStrong }]}>
             <Text style={[styles.recapValue, { color: accentColor }]}>{row.value}</Text>
-            <Text style={[typography.body, { color: colors.textSoft }]}>{row.label}</Text>
+            <Text style={[styles.recapLabel, { color: colors.textSoft }]}>{row.label}</Text>
           </View>
         ))}
       </View>
@@ -81,19 +81,19 @@ export function EndScreen({ game, storyTitle, restarting, error, onRestart, onBa
 const styles = StyleSheet.create({
   root: { alignItems: 'center', gap: spacing.lg, paddingHorizontal: spacing.xl, paddingTop: spacing.xxl },
   wordBlock: { alignItems: 'center', gap: 4 },
-  word: { fontFamily: fonts.display },
+  word: { fontFamily: fonts.displayItalic },
   flourish: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  flourishLine: { width: 40, height: 1.5, borderRadius: 1 },
-  flourishDot: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.4 },
-  epilogue: { fontFamily: fonts.display, fontSize: 21, lineHeight: 29, textAlign: 'center', maxWidth: 300 },
+  flourishLine: { width: 56, height: hairline },
+  flourishMark: { fontFamily: fonts.display, fontSize: 26, lineHeight: 30 },
+  epilogue: { fontFamily: fonts.bodyItalic, fontSize: 19, lineHeight: 28, textAlign: 'center', maxWidth: 320 },
   recap: { width: '100%', maxWidth: 280 },
   recapRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.md, paddingVertical: 10 },
   recapValue: {
     width: 80, // assez pour « 20/20 » : les libellés restent alignés
-    fontFamily: fonts.display,
-    fontSize: 28,
+    fontFamily: fonts.monoBold,
+    fontSize: 24,
     lineHeight: 30,
-    fontVariant: ['lining-nums'],
   },
+  recapLabel: { fontFamily: fonts.mono, fontSize: 13, letterSpacing: 1, textTransform: 'uppercase' },
   actions: { width: '100%', gap: spacing.sm, marginTop: spacing.md },
 });

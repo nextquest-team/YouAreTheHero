@@ -1,24 +1,19 @@
-import Feather from '@expo/vector-icons/Feather';
-import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { LoadState } from '@/components/common/LoadState';
 import { GenreChips } from '@/components/library/GenreChips';
-import { ResumeCard } from '@/components/library/ResumeCard';
 import { StoryCard } from '@/components/library/StoryCard';
+import type { CoverVariant } from '@/components/library/StoryCover';
 import { Button, Input, Screen } from '@/components/ui';
-import { useAuth } from '@/hooks/useAuth';
 import { useGenres, useSaves, useStories } from '@/hooks/useStories';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
-import { assetUrl } from '@/services/client';
-import { fonts, typography } from '@/theme';
+import { fonts, hairline, typography } from '@/theme';
 
 export default function Library() {
   const { colors } = useTheme();
-  const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [genre, setGenre] = useState<string | null>(null);
 
@@ -34,44 +29,39 @@ export default function Library() {
     }, [reloadSaves]),
   );
 
-  const current = saves.data?.find((save) => save.status === 'IN_PROGRESS') ?? null;
+  // Toutes les parties commencées : leur fiche passe « En cours » et remonte en tête de liste
+  const inProgress = new Set(saves.data?.filter((save) => save.status === 'IN_PROGRESS').map((save) => save.story.id));
+  const list = [...(stories.data ?? [])].sort((x, y) => Number(inProgress.has(y.id)) - Number(inProgress.has(x.id)));
   const filtered = query.trim() !== '' || genre !== null;
-  const avatar = assetUrl(user?.avatarUrl);
+  const count = stories.data?.length ?? 0;
   const openStory = (id: string) => router.push({ pathname: '/story/[id]', params: { id } });
 
   return (
     <Screen scroll>
       <View style={styles.header}>
-        <View style={styles.greeting}>
-          <Text style={[typography.label, { color: colors.textMuted }]}>{fr.library.greeting}</Text>
-          <Text accessibilityRole="header" style={[typography.title, { color: colors.text }]} numberOfLines={1}>
-            {user?.displayName}
+        <View style={styles.brandRow}>
+          <Text style={[styles.brand, { color: colors.text }]} numberOfLines={1}>
+            {fr.library.brand}
           </Text>
+          {stories.data ? (
+            <Text style={[styles.brand, { color: colors.accent }]} accessibilityLabel={fr.library.storyCount(count)}>
+              {`Nº ${String(count).padStart(2, '0')}`}
+            </Text>
+          ) : null}
         </View>
-        <Pressable
-          onPress={() => router.push('/selfie')}
-          accessibilityRole="button"
-          accessibilityLabel={fr.library.heroButton}
-          style={[styles.hero, { borderColor: colors.accent, backgroundColor: colors.surfaceAlt }]}
-        >
-          {avatar ? (
-            <Image source={avatar} style={styles.heroImage} contentFit="cover" />
-          ) : (
-            <Feather name="camera" size={22} color={colors.accent} />
-          )}
-        </Pressable>
+        {/* Double filet d'en-tête de carnet */}
+        <View style={[styles.doubleRule, { borderColor: colors.borderStrong }]} />
+        <Text accessibilityRole="header" style={[styles.headline, { color: colors.text }]}>
+          {fr.library.headlineStart}
+          <Text style={{ fontFamily: fonts.displayItalic, color: colors.accent }}>{fr.library.headlineAccent}</Text>
+          {fr.library.headlineEnd}
+        </Text>
+        <Text style={[styles.tagline, { color: colors.textMuted }]}>{fr.library.tagline}</Text>
       </View>
 
-      {current ? (
-        <View style={styles.section}>
-          <Text style={[typography.overline, { color: colors.textMuted }]}>{fr.library.resume}</Text>
-          <ResumeCard save={current} onPress={() => openStory(current.story.id)} />
-        </View>
-      ) : null}
-
       <View style={styles.section}>
-        <Text style={[typography.overline, { color: colors.textMuted }]}>{fr.library.allStories}</Text>
         <Input
+          variant="underline"
           label={fr.library.searchLabel}
           placeholder={fr.library.searchPlaceholder}
           value={query}
@@ -83,52 +73,52 @@ export default function Library() {
         {genres.data && genres.data.length > 0 ? (
           <GenreChips genres={genres.data} value={genre} onChange={setGenre} />
         ) : null}
+      </View>
 
-        <LoadState loading={stories.loading && !stories.data} error={stories.error} onRetry={stories.reload} />
+      <LoadState loading={stories.loading && !stories.data} error={stories.error} onRetry={stories.reload} />
 
-        {stories.data && stories.data.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={[typography.body, styles.emptyText, { color: colors.textMuted }]}>
-              {filtered ? fr.library.noResult : fr.library.empty}
-            </Text>
-            {filtered ? (
-              <Button
-                label={fr.library.clearFilters}
-                variant="ghost"
-                onPress={() => {
-                  setQuery('');
-                  setGenre(null);
-                }}
-              />
-            ) : null}
-          </View>
-        ) : null}
-
-        <View style={styles.list}>
-          {stories.data?.map((story) => (
-            <StoryCard key={story.id} story={story} onPress={() => openStory(story.id)} />
-          ))}
+      {stories.data && stories.data.length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={[typography.body, styles.emptyText, { color: colors.textMuted }]}>
+            {filtered ? fr.library.noResult : fr.library.empty}
+          </Text>
+          {filtered ? (
+            <Button
+              label={fr.library.clearFilters}
+              variant="ghost"
+              onPress={() => {
+                setQuery('');
+                setGenre(null);
+              }}
+            />
+          ) : null}
         </View>
+      ) : null}
+
+      <View style={styles.list}>
+        {list.map((story, index) => (
+          <StoryCard
+            key={story.id}
+            story={story}
+            inProgress={inProgress.has(story.id)}
+            coverVariant={(index % 3) as CoverVariant}
+            onPress={() => openStory(story.id)}
+          />
+        ))}
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 },
-  greeting: { flex: 1, gap: 2 },
-  hero: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  heroImage: { width: '100%', height: '100%' },
-  section: { gap: 10 },
-  list: { gap: 10 },
+  header: { gap: 10 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 },
+  brand: { fontFamily: fonts.monoBold, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' },
+  doubleRule: { borderTopWidth: hairline, borderBottomWidth: hairline, paddingTop: 3 },
+  headline: { fontFamily: fonts.display, fontSize: 44, lineHeight: 48, marginTop: 4 },
+  tagline: { fontFamily: fonts.bodyItalic, fontSize: 16, lineHeight: 22 },
+  section: { gap: 14 },
+  list: { gap: 18, paddingRight: 4, paddingBottom: 4 },
   empty: { alignItems: 'center', gap: 8, paddingVertical: 24 },
   emptyText: { textAlign: 'center', fontFamily: fonts.body },
 });

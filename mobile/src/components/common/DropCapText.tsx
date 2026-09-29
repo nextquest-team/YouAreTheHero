@@ -13,6 +13,7 @@ type Props = {
   text: string;
   textStyle: TextStyle & { lineHeight: number };
   capColor: string;
+  capFontFamily?: string; // par défaut, celle du texte
 };
 
 // La lettrine occupe la hauteur de deux lignes de texte.
@@ -25,7 +26,7 @@ const CAP_WIDTH = 46;
  * (onTextLayout), puis on affiche ces deux premières lignes à côté d'elle et la suite en pleine
  * largeur. Une lettre imbriquée dans le Text serait coupée en haut et écarterait toutes les lignes.
  */
-export function DropCapText({ text, textStyle, capColor }: Props) {
+export function DropCapText({ text, textStyle, capColor, capFontFamily }: Props) {
   const [width, setWidth] = useState(0);
   const [splitAt, setSplitAt] = useState<number | null>(null);
 
@@ -43,7 +44,8 @@ export function DropCapText({ text, textStyle, capColor }: Props) {
   };
 
   return (
-    <View onLayout={onLayout}>
+    // Lu d'un bloc par VoiceOver : sinon la lettrine serait annoncée seule, puis « haque pas… »
+    <View onLayout={onLayout} accessible accessibilityLabel={text}>
       {width > 0 && splitAt === null ? (
         <Text
           style={[textStyle, styles.measure, { width: width - CAP_WIDTH }]}
@@ -59,7 +61,7 @@ export function DropCapText({ text, textStyle, capColor }: Props) {
             styles.cap,
             {
               color: capColor,
-              fontFamily: textStyle.fontFamily,
+              fontFamily: capFontFamily ?? textStyle.fontFamily,
               height: capHeight,
               fontSize: capHeight * 1.12,
               lineHeight: capHeight * 1.12,

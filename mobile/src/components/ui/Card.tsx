@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
-import { radius, spacing } from '@/theme';
+import { hairline, offsetShadow, radius, spacing } from '@/theme';
 
 type Props = {
   children: ReactNode;
@@ -14,7 +14,11 @@ type Props = {
 
 export function Card({ children, onPress, accessibilityLabel, style }: Props) {
   const { colors } = useTheme();
-  const base = [styles.card, { backgroundColor: colors.surface, borderColor: colors.border }, style];
+  const base = [
+    styles.card,
+    { backgroundColor: colors.surface, borderColor: colors.borderStrong, boxShadow: offsetShadow(colors.borderStrong) },
+    style,
+  ];
 
   if (!onPress) return <View style={base}>{children}</View>;
 
@@ -23,7 +27,7 @@ export function Card({ children, onPress, accessibilityLabel, style }: Props) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => [base, pressed && { opacity: 0.8 }]}
+      style={({ pressed }) => [base, pressed && styles.pressed]}
     >
       {children}
     </Pressable>
@@ -32,9 +36,11 @@ export function Card({ children, onPress, accessibilityLabel, style }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: 1,
+    borderWidth: hairline,
     borderRadius: radius.xl,
     padding: spacing.lg,
     gap: spacing.md,
   },
+  // À l'appui, la carte s'enfonce dans son ombre
+  pressed: { transform: [{ translateX: 2 }, { translateY: 2 }], boxShadow: 'none' },
 });

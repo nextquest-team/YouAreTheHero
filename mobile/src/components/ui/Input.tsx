@@ -2,20 +2,22 @@ import { useId } from 'react';
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
-import { fonts, radius, spacing } from '@/theme';
+import { fonts, hairline, radius, spacing, touchTarget } from '@/theme';
 
 type Props = TextInputProps & {
   label: string;
   error?: string | null;
+  // Souligné : un simple trait d'encre, pour la recherche en tête de bibliothèque
+  variant?: 'boxed' | 'underline';
 };
 
-export function Input({ label, error, multiline, style, ...rest }: Props) {
+export function Input({ label, error, multiline, variant = 'boxed', style, ...rest }: Props) {
   const { colors } = useTheme();
   const id = useId();
 
   return (
     <View style={styles.field}>
-      <Text nativeID={id} style={[styles.label, { color: colors.text }]}>
+      <Text nativeID={id} style={[styles.label, { color: colors.textMuted }]}>
         {label}
       </Text>
       <TextInput
@@ -26,11 +28,10 @@ export function Input({ label, error, multiline, style, ...rest }: Props) {
         style={[
           styles.input,
           multiline && styles.multiline,
-          {
-            backgroundColor: colors.surface,
-            borderColor: error ? colors.danger : colors.border,
-            color: colors.text,
-          },
+          { borderColor: error ? colors.danger : colors.borderStrong, color: colors.text },
+          variant === 'boxed'
+            ? { backgroundColor: colors.surface, borderWidth: error ? 2 : hairline }
+            : [styles.underline, { borderBottomWidth: error ? 2 : hairline }],
           style,
         ]}
         {...rest}
@@ -46,15 +47,15 @@ export function Input({ label, error, multiline, style, ...rest }: Props) {
 
 const styles = StyleSheet.create({
   field: { gap: 6 },
-  label: { fontFamily: fonts.bodySemiBold, fontSize: 14 },
+  label: { fontFamily: fonts.monoBold, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' },
   input: {
     minHeight: 48,
-    borderWidth: 1,
     borderRadius: radius.md,
     paddingHorizontal: 14,
     fontFamily: fonts.body,
-    fontSize: 16,
+    fontSize: 17,
   },
+  underline: { minHeight: touchTarget, borderRadius: 0, paddingHorizontal: 0 },
   multiline: {
     minHeight: 96,
     paddingVertical: spacing.md,

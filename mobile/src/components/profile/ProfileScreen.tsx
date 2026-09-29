@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
 import { Button, Card, Screen } from '@/components/ui';
@@ -8,10 +9,12 @@ import { fonts, typography } from '@/theme';
 type Props = {
   // Branché sur l'AuthProvider de B ; le bouton n'apparaît qu'une fois fourni
   onLogout?: () => void;
+  // Section propre au rôle, sous le titre (le héros du joueur)
+  children?: ReactNode;
 };
 
 // Écran Profil commun aux deux rôles
-export function ProfileScreen({ onLogout }: Props) {
+export function ProfileScreen({ onLogout, children }: Props) {
   const { colors, isDark, setScheme } = useTheme();
 
   return (
@@ -19,6 +22,8 @@ export function ProfileScreen({ onLogout }: Props) {
       <Text accessibilityRole="header" style={[typography.title, { color: colors.text }]}>
         {fr.profile.title}
       </Text>
+
+      {children}
 
       <View style={styles.section}>
         <Text style={[typography.overline, { color: colors.textMuted }]}>
