@@ -1,3 +1,6 @@
+import { File } from 'expo-file-system';
+import { Platform } from 'react-native';
+
 import type { ApiErrorBody } from '@/types/api';
 
 const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
@@ -65,10 +68,16 @@ export async function apiFetch<T>(path: string, { method = 'GET', body, query }:
  * par exemple vers /uploads (selfie) ou /me/media (médiathèque). L'API n'accepte que JPEG et PNG.
  */
 export async function apiUpload<T>(path: string, fileUri: string): Promise<T> {
-  const name = fileUri.split('/').pop() || 'image.jpg';
   const form = new FormData();
-  // Forme propre à React Native : le fichier est décrit par son URI, pas par un Blob.
-  form.append('file', { uri: fileUri, name, type: name.endsWith('.png') ? 'image/png' : 'image/jpeg' } as unknown as Blob);
+  if (Platform.OS === 'web') {
+    // Sur le web l'URI est un blob: ou data: : on envoie le vrai fichier.
+    const blob = await (await fetch(fileUri)).blob();
+    form.append('file', blob, blob.type === 'image/png' ? 'image.png' : 'image.jpg');
+  } else {
+    // Le fetch global du SDK 57 (expo/fetch) refuse l'ancienne forme { uri, name, type } :
+    // il lui faut un File d'expo-file-system, qui se comporte comme un Blob.
+    form.append('file', new File(fileUri));
+  }
 
   // Pas de Content-Type : fetch le pose lui-même avec la frontière multipart.
   return send<T>(path, { method: 'POST', headers: {}, body: form });
@@ -81,7 +90,9 @@ async function send<T>(pathWithQuery: string, init: { method: string; headers: R
   let response: Response;
   try {
     response = await fetch(`${API_URL}${pathWithQuery}`, { ...init, headers });
-  } catch {
+  } catch (cause) {
+    // La vraie cause (ex. « Network request failed ») n'apparaît que dans le terminal Metro.
+    if (__DEV__) console.warn(`[api] ${init.method} ${API_URL}${pathWithQuery}`, cause);
     throw new ApiError(0, NETWORK_ERROR, 'API injoignable');
   }
 
