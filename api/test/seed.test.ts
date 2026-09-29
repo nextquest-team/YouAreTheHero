@@ -7,6 +7,7 @@ import { env } from '../src/config/env.js';
 import { db } from '../src/db/index.js';
 import { choices, enemies, items, scenes, statDefinitions, stories, users } from '../src/db/schema/index.js';
 import { runSeed } from '../src/db/seed.js';
+import { seedStories } from '../src/db/seed-stories/index.js';
 import type { Condition, Effect } from '../src/engine/schemas.js';
 
 describe('seed de démo', () => {
@@ -21,11 +22,11 @@ describe('seed de démo', () => {
     await runSeed();
   });
 
-  it('crée exactement 2 utilisateurs et 3 histoires', async () => {
+  it('crée exactement 2 utilisateurs et toutes les histoires du seed', async () => {
     const allUsers = await db.select().from(users);
     const allStories = await db.select().from(stories);
     expect(allUsers).toHaveLength(2);
-    expect(allStories).toHaveLength(3);
+    expect(allStories).toHaveLength(seedStories.length);
   });
 
   it('permet de se connecter avec le compte joueur de démo', async () => {
@@ -51,7 +52,7 @@ describe('seed de démo', () => {
   });
 
   it('le butin de la Goule donne +1 Clé', async () => {
-    const [crypt] = await db.select().from(stories).where(eq(stories.published, true));
+    const [crypt] = await db.select().from(stories).where(eq(stories.title, 'La Crypte du Roi Oublié'));
     const [goule] = await db.select().from(enemies).where(eq(enemies.storyId, crypt.id));
     const cryptItems = await db.select().from(items).where(eq(items.storyId, crypt.id));
     const cle = cryptItems.find((item) => item.name === 'Clé rouillée')!;
@@ -59,13 +60,15 @@ describe('seed de démo', () => {
     expect(goule.defeatEffects).toEqual([{ type: 'item', itemId: cle.id, qty: 1 }]);
   });
 
-  it("une histoire sans combats n'a aucune scène avec ennemi", async () => {
-    const [draft] = await db.select().from(stories).where(eq(stories.title, 'Le Phare des Brumes'));
-    expect(draft.hasCombat).toBe(false);
+  it("les histoires sans combats n'ont aucune scène avec ennemi", async () => {
+    const peacefulStories = await db.select().from(stories).where(eq(stories.hasCombat, false));
+    expect(peacefulStories.length).toBe(seedStories.filter((story) => !story.hasCombat).length);
 
-    const draftScenes = await db.select().from(scenes).where(eq(scenes.storyId, draft.id));
-    for (const scene of draftScenes) {
-      expect(scene.enemyId).toBeNull();
+    for (const peaceful of peacefulStories) {
+      const peacefulScenes = await db.select().from(scenes).where(eq(scenes.storyId, peaceful.id));
+      for (const scene of peacefulScenes) {
+        expect(scene.enemyId).toBeNull();
+      }
     }
   });
 
@@ -86,7 +89,7 @@ describe('seed de démo', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json().warnings).toEqual([]);
 
-    // Remis en brouillon : les autres tests comptent une seule histoire publiée.
+    // Remis en brouillon, comme dans le seed.
     await db.update(stories).set({ published: false, publishedAt: null }).where(eq(stories.id, tomb.id));
   });
 
@@ -101,7 +104,9 @@ describe('seed de démo', () => {
     }
   });
 
-  describe("l'histoire publiée respecte les règles de validation avant publication (docs/conception.md §4)", () => {
+  const publishedTitles = seedStories.filter((story) => story.published).map((story) => story.title);
+
+  describe.each(publishedTitles)("« %s » respecte les règles de validation avant publication (docs/conception.md §4)", (title) => {
     let story: typeof stories.$inferSelect;
     let allStats: (typeof statDefinitions.$inferSelect)[];
     let allItems: (typeof items.$inferSelect)[];
@@ -109,7 +114,7 @@ describe('seed de démo', () => {
     let allChoices: (typeof choices.$inferSelect)[];
 
     beforeAll(async () => {
-      [story] = await db.select().from(stories).where(eq(stories.published, true));
+      [story] = await db.select().from(stories).where(eq(stories.title, title));
       allStats = await db.select().from(statDefinitions).where(eq(statDefinitions.storyId, story.id));
       allItems = await db.select().from(items).where(eq(items.storyId, story.id));
       allScenes = await db.select().from(scenes).where(eq(scenes.storyId, story.id));
@@ -136,6 +141,10 @@ describe('seed de démo', () => {
 
     it("toute scène de combat a une scène de victoire, et l'histoire a une stat d'attaque et une stat de PV", () => {
       const combatScenes = allScenes.filter((scene) => scene.enemyId !== null);
+      if (!story.hasCombat) {
+        expect(combatScenes).toHaveLength(0);
+        return;
+      }
       expect(combatScenes.length).toBeGreaterThan(0);
       for (const scene of combatScenes) {
         expect(scene.winSceneId).not.toBeNull();
@@ -159,6 +168,9 @@ describe('seed de démo', () => {
     });
 
     it('la stat PV est de type number, avec un min de 0 (ou pas de min) et une valeur par défaut supérieure à 0', () => {
+      if (!story.hasCombat) {
+        return;
+      }
       const hpStat = allStats.find((stat) => stat.id === story.hpStatId);
       expect(hpStat).toBeDefined();
       expect(hpStat!.type).toBe('number');

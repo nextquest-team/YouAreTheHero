@@ -58,10 +58,31 @@ docker compose exec api node dist/db/seed.js
 
 La documentation Swagger de l'API est servie sur `/docs` (`http://localhost:3000/docs`).
 
-`npm run db:seed` vide entièrement la base (comptes compris) puis réinsère les données de démo : deux comptes, mot de passe `demo1234` :
+### Remettre la base à zéro avec les données de démo
 
-- `auteur@demo.fr` (créateur) : autrice d'une histoire publiée et jouable, « La Crypte du Roi Oublié », et d'un brouillon, « Le Phare des Brumes ».
-- `joueur@demo.fr` (joueur) : pour parcourir l'histoire publiée.
+```bash
+cd api && npm run db:reset
+```
+
+Ou, si l'API tourne dans Docker (le conteneur applique déjà les migrations au démarrage) : `docker compose up -d --build api && docker compose exec api node dist/db/seed.js`.
+
+`db:reset` applique les migrations puis lance `db:seed`, qui **vide entièrement la base** (comptes, parties et avis compris) avant de réinsérer les données de démo. Deux comptes, mot de passe `demo1234` :
+
+- `joueur@demo.fr` (joueur) : pour parcourir le catalogue et jouer.
+- `auteur@demo.fr` (créateur) : auteur de toutes les histoires ci-dessous, qu'on retrouve dans l'éditeur.
+
+| Histoire | Genre | Combats | Statut |
+| --- | --- | --- | --- |
+| La Crypte du Roi Oublié | Fantasy | oui | publiée |
+| Les Pirates de la Mer d'Encre | Aventure | oui (3 combats, dont 2 défaites non mortelles) | publiée |
+| Les Lettres de la rue Lepic | Romance | non | publiée |
+| Un été à Lisbonne | Romance | non | publiée |
+| Station Borealis | Science-fiction | non | publiée |
+| Le Kouign-amann de Mamie Rose | Tranche de vie | non | publiée |
+| Le Phare des Brumes | Mystère | non | brouillon |
+| Le Tombeau de la Reine Grise | Fantasy | oui | brouillon, prêt à publier |
+
+Les histoires du seed sont dans `api/src/db/seed-stories/` (une par fichier, à ajouter dans `index.ts`).
 
 ## Vérifications avant une PR
 

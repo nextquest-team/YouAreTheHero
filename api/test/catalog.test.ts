@@ -4,6 +4,7 @@ import { buildApp, type App } from '../src/app.js';
 import { db } from '../src/db/index.js';
 import { stories } from '../src/db/schema/index.js';
 import { runSeed } from '../src/db/seed.js';
+import { seedStories } from '../src/db/seed-stories/index.js';
 import { createUser } from './helpers/auth.js';
 
 describe('module catalogue (/stories)', () => {
@@ -29,12 +30,14 @@ describe('module catalogue (/stories)', () => {
     const response = await app.inject({ method: 'GET', url: '/stories', headers: { authorization: `Bearer ${token}` } });
 
     expect(response.statusCode).toBe(200);
-    const body = response.json();
-    expect(body).toHaveLength(1);
-    expect(body[0].title).toBe('La Crypte du Roi Oublié');
-    expect(body[0].author.displayName).toBe('Auteur Démo');
-    expect(body[0].avgRating).toBeNull();
-    expect(body[0].isFavorite).toBe(false);
+    const body: { title: string; author: { displayName: string }; avgRating: number | null; isFavorite: boolean }[] =
+      response.json();
+    const publishedTitles = seedStories.filter((story) => story.published).map((story) => story.title);
+    expect(body.map((story) => story.title).sort()).toEqual([...publishedTitles].sort());
+    const crypt = body.find((story) => story.title === 'La Crypte du Roi Oublié')!;
+    expect(crypt.author.displayName).toBe('Auteur Démo');
+    expect(crypt.avgRating).toBeNull();
+    expect(crypt.isFavorite).toBe(false);
   });
 
   it('q recherche un mot du résumé, insensible à la casse', async () => {
@@ -143,6 +146,7 @@ describe('module catalogue (/stories)', () => {
     const response = await app.inject({ method: 'GET', url: '/stories/genres', headers: { authorization: `Bearer ${token}` } });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual(['Fantasy']);
+    const genres = [...new Set(seedStories.filter((story) => story.published).map((story) => story.genre))];
+    expect(response.json()).toEqual(genres.sort((a, b) => a.localeCompare(b)));
   });
 });
