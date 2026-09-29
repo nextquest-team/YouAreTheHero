@@ -7,7 +7,7 @@ import { env } from '../config/env.js';
 import type { Condition, Effect } from '../engine/schemas.js';
 import { db, closeDb } from './index.js';
 import { choices, enemies, items, scenes, statDefinitions, stories, users } from './schema/index.js';
-import { cryptStory, demoUsers, lighthouseStory, type SeedCondition, type SeedEffect, type SeedStory } from './seed-data.js';
+import { cryptStory, demoUsers, lighthouseStory, tombStory, type SeedCondition, type SeedEffect, type SeedStory } from './seed-data.js';
 import { ALL_TABLES } from './tables.js';
 
 // Type de `tx` tel que fourni par db.transaction(async (tx) => ...) : distinct de `typeof db`
@@ -208,6 +208,7 @@ export async function runSeed(): Promise<void> {
     const authorId = userIds.get('auteur@demo.fr')!;
     await seedStory(tx, authorId, cryptStory);
     await seedStory(tx, authorId, lighthouseStory);
+    await seedStory(tx, authorId, tombStory);
   });
 
   await copySeedAssets();
