@@ -2,7 +2,10 @@ import { and, asc, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { db } from '../../../db/index.js';
 import { choices, enemies, items, scenes, statDefinitions, stories } from '../../../db/schema/index.js';
 import { unprocessable } from '../../../lib/errors.js';
+import { toDto as enemyToDto } from '../enemies/service.js';
+import { toDto as itemToDto } from '../items/service.js';
 import { assertInStory, type Story } from '../ownership.js';
+import { toDto as sceneToDto } from '../scenes/service.js';
 import { toDto as statToDto } from '../stats/service.js';
 import type { CreateStoryBody, PublishResultDto, StoryDto, StoryFullDto, UpdateStoryBody } from './schemas.js';
 import { validateStory } from './validation.js';
@@ -81,45 +84,9 @@ export async function getFull(story: Story): Promise<StoryFullDto> {
   return {
     ...toDto(story),
     stats: statRows.map(statToDto),
-    enemies: enemyRows.map((enemy) => ({
-      id: enemy.id,
-      name: enemy.name,
-      imageUrl: enemy.imageUrl,
-      attack: enemy.attack,
-      hp: enemy.hp,
-      shield: enemy.shield,
-      extraStats: enemy.extraStats,
-      defeatEffects: enemy.defeatEffects,
-      sortOrder: enemy.sortOrder,
-    })),
-    items: itemRows.map((item) => ({
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      imageUrl: item.imageUrl,
-      useEffects: item.useEffects ?? null,
-      sortOrder: item.sortOrder,
-    })),
-    scenes: sceneRows.map((scene) => ({
-      id: scene.id,
-      title: scene.title,
-      text: scene.text,
-      backgroundUrl: scene.backgroundUrl,
-      isEnding: scene.isEnding,
-      enemyId: scene.enemyId,
-      winSceneId: scene.winSceneId,
-      loseSceneId: scene.loseSceneId,
-      onEnterEffects: scene.onEnterEffects,
-      sortOrder: scene.sortOrder,
-      choices: (choicesByScene.get(scene.id) ?? []).map((choice) => ({
-        id: choice.id,
-        toSceneId: choice.toSceneId,
-        label: choice.label,
-        condition: choice.condition ?? null,
-        effects: choice.effects,
-        sortOrder: choice.sortOrder,
-      })),
-    })),
+    enemies: enemyRows.map(enemyToDto),
+    items: itemRows.map(itemToDto),
+    scenes: sceneRows.map((scene) => sceneToDto(scene, choicesByScene.get(scene.id) ?? [])),
   };
 }
 
