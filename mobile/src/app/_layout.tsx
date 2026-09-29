@@ -10,9 +10,10 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { AuthProvider } from '@/auth/AuthProvider';
+import { AnimatedSplash } from '@/components/common/AnimatedSplash';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { ThemeProvider } from '@/theme';
@@ -23,6 +24,9 @@ function RootStack({ fontsReady }: { fontsReady: boolean }) {
   const { colors, isDark } = useTheme();
   const { isLoading, user } = useAuth();
   const ready = fontsReady && !isLoading;
+  // Le splash natif (fond papier, sans image) passe la main au splash animé, joué une fois au lancement
+  const [splashDone, setSplashDone] = useState(false);
+  const endSplash = useCallback(() => setSplashDone(true), []);
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
@@ -46,6 +50,7 @@ function RootStack({ fontsReady }: { fontsReady: boolean }) {
           <Stack.Screen name="(creator)" />
         </Stack.Protected>
       </Stack>
+      {splashDone ? null : <AnimatedSplash onDone={endSplash} />}
     </>
   );
 }

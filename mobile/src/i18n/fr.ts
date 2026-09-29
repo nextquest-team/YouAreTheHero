@@ -319,6 +319,11 @@ export const fr = {
     saves: 'Parties',
     profile: 'Profil',
   },
+  splash: {
+    stampTop: 'You Are',
+    stampBottom: 'The Hero',
+    roll: 'Tu fais 11 · à toi de jouer',
+  },
   library: {
     brand: 'You Are The Hero',
     headlineStart: 'Choisis ton ',
