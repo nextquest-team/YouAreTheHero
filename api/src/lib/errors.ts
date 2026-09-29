@@ -31,3 +31,17 @@ export function conflict(code: string, message: string, extra?: Record<string, u
 export function unprocessable(code: string, message: string, extra?: Record<string, unknown>): HttpError {
   return new HttpError(422, code, message, extra);
 }
+
+/**
+ * Violation de contrainte unique Postgres (23505). Drizzle enveloppe l'erreur pg dans
+ * `DrizzleQueryError` (`.cause` porte l'erreur d'origine) : on regarde les deux niveaux
+ * pour rester robuste si un jour l'erreur n'est plus enveloppée.
+ */
+export function isUniqueViolation(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const code = (error as { code?: unknown }).code;
+  const causeCode = (error.cause as { code?: unknown } | undefined)?.code;
+  return code === '23505' || causeCode === '23505';
+}

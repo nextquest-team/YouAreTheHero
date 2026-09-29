@@ -1,7 +1,8 @@
 import { and, asc, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { db } from '../../../db/index.js';
 import { choices, enemies, items, scenes, statDefinitions, stories } from '../../../db/schema/index.js';
-import { unprocessable } from '../../../lib/errors.js';
+import { conflict, isUniqueViolation, unprocessable } from '../../../lib/errors.js';
+import { collectStoryImages, purgeUnusedImages } from '../../../lib/images.js';
 import { toDto as enemyToDto } from '../enemies/service.js';
 import { toDto as itemToDto } from '../items/service.js';
 import { assertInStory, type Story } from '../ownership.js';
@@ -28,23 +29,37 @@ function toDto(story: Story): StoryDto {
   };
 }
 
+/** L'index unique (auteur, titre sans casse) tranche : on convertit sa violation en 409 TITLE_TAKEN. */
+async function withUniqueTitle<T>(write: () => Promise<T>): Promise<T> {
+  try {
+    return await write();
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      throw conflict('TITLE_TAKEN', 'Tu as déjà une histoire avec ce titre');
+    }
+    throw error;
+  }
+}
+
 export async function listMine(userId: string): Promise<StoryDto[]> {
   const rows = await db.select().from(stories).where(eq(stories.authorId, userId)).orderBy(desc(stories.updatedAt));
   return rows.map(toDto);
 }
 
 export async function create(userId: string, input: CreateStoryBody): Promise<StoryDto> {
-  const [created] = await db
-    .insert(stories)
-    .values({
-      authorId: userId,
-      title: input.title,
-      summary: input.summary,
-      genre: input.genre,
-      coverUrl: input.coverUrl ?? null,
-      hasCombat: input.hasCombat,
-    })
-    .returning();
+  const [created] = await withUniqueTitle(() =>
+    db
+      .insert(stories)
+      .values({
+        authorId: userId,
+        title: input.title,
+        summary: input.summary,
+        genre: input.genre,
+        coverUrl: input.coverUrl ?? null,
+        hasCombat: input.hasCombat,
+      })
+      .returning(),
+  );
   return toDto(created);
 }
 
@@ -163,12 +178,21 @@ export async function update(story: Story, input: UpdateStoryBody): Promise<Stor
     return toDto(story);
   }
 
-  const [updated] = await db.update(stories).set(updates).where(eq(stories.id, story.id)).returning();
+  const [updated] = await withUniqueTitle(() =>
+    db.update(stories).set(updates).where(eq(stories.id, story.id)).returning(),
+  );
   return toDto(updated);
 }
 
+/**
+ * Supprime l'histoire (scènes, objets, parties... suivent en cascade), puis ses images :
+ * couverture, décors, objets, ennemis et visages des héros de ses parties, sauf celles
+ * qu'une autre histoire ou un profil utilise encore.
+ */
 export async function remove(storyId: string): Promise<void> {
+  const urls = await collectStoryImages([storyId]);
   await db.delete(stories).where(eq(stories.id, storyId));
+  await purgeUnusedImages(urls);
 }
 
 /**

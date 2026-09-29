@@ -287,9 +287,10 @@ POST   /auth/register         { email, password, displayName, role } → { token
 POST   /auth/login            { email, password }                    → { token, user }
 GET    /auth/me                                                      → user
 PATCH  /auth/me               { displayName?, avatarUrl? }           → user
+DELETE /auth/me               → 204 ; supprime le compte, ses histoires, parties, médiathèque et images (RGPD)
 
 # Bibliothèque (B), réservée aux PLAYER
-GET    /stories?q=&genre=     histoires publiées → [{ id, title, summary, genre, coverUrl, hasCombat, author, avgRating, isFavorite }]
+GET    /stories?q=&genre=&authorId=  histoires publiées (authorId : celles d'un créateur) → [{ id, title, summary, genre, coverUrl, hasCombat, author, avgRating, isFavorite }]
 GET    /stories/genres        genres distincts des histoires publiées, triés → ["Fantasy", ...]
 GET    /stories/:id           détail publié + définitions de stats + état de ma partie (mySave: { status, updatedAt } | null)
 PUT    /stories/:id/favorite  (bonus)
@@ -303,7 +304,7 @@ GET    /me/stories                           mes histoires, brouillons compris
 POST   /me/stories                           { title, summary, genre, coverUrl?, hasCombat? }
 GET    /me/stories/:id                       histoire complète (stats, ennemis, objets, scènes, choix)
 PATCH  /me/stories/:id                       { ..., hasCombat, startSceneId, attackStatId, hpStatId }
-DELETE /me/stories/:id
+DELETE /me/stories/:id                    supprime aussi ses images que rien d'autre n'utilise
 POST   /me/stories/:id/publish               → 200, ou 422 { errors: [...], warnings: [...] }
 POST   /me/stories/:id/unpublish
 POST   /me/stories/:id/stats                 { name, type, defaultValue, min?, max? }
@@ -317,6 +318,7 @@ PATCH  /me/scenes/:sceneId    DELETE /me/scenes/:sceneId
 POST   /me/scenes/:sceneId/choices           { toSceneId, label, condition?, effects? }
 PATCH  /me/choices/:choiceId  DELETE /me/choices/:choiceId
 # toute route d'édition /me/... → 409 si l'histoire est publiée
+# POST/PATCH /me/stories → 409 TITLE_TAKEN si le créateur a déjà une histoire de ce titre (casse ignorée)
 # DELETE /me/stats/:statId → 409 { usedIn: [...] } si la stat est utilisée
 # DELETE /me/items/:itemId → 409 { usedIn: [...] } si l'objet est utilisé
 # DELETE /me/enemies/:enemyId → 409 ENEMY_IN_USE { usedIn: [...] } si une scène le combat

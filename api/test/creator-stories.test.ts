@@ -63,6 +63,60 @@ describe('module /me/stories', () => {
     expect(response.json().hasCombat).toBe(false);
   });
 
+  it('POST /me/stories avec un titre déjà pris par le même créateur (casse différente) répond 409 TITLE_TAKEN', async () => {
+    const { token } = await createUser(app, { role: 'CREATOR' });
+    await createStory(token, { title: 'Le Donjon' });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/me/stories',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { title: 'le donjon', genre: 'Fantastique' },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error.code).toBe('TITLE_TAKEN');
+  });
+
+  it('deux créateurs différents peuvent donner le même titre à leur histoire', async () => {
+    const alice = await createUser(app, { role: 'CREATOR' });
+    const bob = await createUser(app, { role: 'CREATOR' });
+    await createStory(alice.token, { title: 'Le Donjon' });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/me/stories',
+      headers: { authorization: `Bearer ${bob.token}` },
+      payload: { title: 'Le Donjon', genre: 'Fantastique' },
+    });
+
+    expect(response.statusCode).toBe(201);
+  });
+
+  it('PATCH /me/stories/:id vers le titre d’une autre de ses histoires répond 409 TITLE_TAKEN', async () => {
+    const { token } = await createUser(app, { role: 'CREATOR' });
+    await createStory(token, { title: 'Le Donjon' });
+    const tower = await createStory(token, { title: 'La Tour' });
+
+    const renamed = await app.inject({
+      method: 'PATCH',
+      url: `/me/stories/${tower.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { title: 'LE DONJON' },
+    });
+    expect(renamed.statusCode).toBe(409);
+    expect(renamed.json().error.code).toBe('TITLE_TAKEN');
+
+    // Renvoyer son propre titre n'est pas un doublon.
+    const unchanged = await app.inject({
+      method: 'PATCH',
+      url: `/me/stories/${tower.id}`,
+      headers: { authorization: `Bearer ${token}` },
+      payload: { title: 'La Tour' },
+    });
+    expect(unchanged.statusCode).toBe(200);
+  });
+
   it('GET /me/stories liste les histoires du créateur, triées par updatedAt décroissant', async () => {
     const { token } = await createUser(app, { role: 'CREATOR' });
     const first = await createStory(token, { title: 'Première' });

@@ -5,6 +5,8 @@ export const storyIdParamSchema = z.object({ id: z.uuid() });
 export const listStoriesQuerySchema = z.object({
   q: z.string().optional(),
   genre: z.string().optional(),
+  // Les histoires publiées d'un seul créateur (page auteur).
+  authorId: z.uuid().optional(),
 });
 export type ListStoriesQuery = z.infer<typeof listStoriesQuerySchema>;
 

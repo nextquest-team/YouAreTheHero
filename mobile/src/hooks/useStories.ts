@@ -26,6 +26,10 @@ export function useGenres() {
   return useApi(listGenres, 'genres');
 }
 
+export function useAuthorStories(authorId: string) {
+  return useApi(() => listStories({ authorId }), authorId);
+}
+
 export function useStory(id: string) {
   return useApi(() => getStory(id), id);
 }

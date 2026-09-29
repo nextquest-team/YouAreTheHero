@@ -80,6 +80,32 @@ describe('module catalogue (/stories)', () => {
     expect(miss.json()).toHaveLength(0);
   });
 
+  it('authorId ne renvoie que les histoires publiées de ce créateur', async () => {
+    const token = await playerToken();
+    const other = await createUser(app, { role: 'CREATOR' });
+    await db.insert(stories).values([
+      { authorId: other.user.id, title: 'Publiée', genre: 'Conte', published: true, publishedAt: new Date() },
+      { authorId: other.user.id, title: 'Brouillon', genre: 'Conte' },
+    ]);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/stories?authorId=${other.user.id}`,
+      headers: { authorization: `Bearer ${token}` },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body: { title: string; author: { id: string } }[] = response.json();
+    expect(body.map((story) => story.title)).toEqual(['Publiée']);
+    expect(body[0].author.id).toBe(other.user.id);
+  });
+
+  it('authorId qui n’est pas un uuid répond 422', async () => {
+    const token = await playerToken();
+    const response = await app.inject({ method: 'GET', url: '/stories?authorId=abc', headers: { authorization: `Bearer ${token}` } });
+    expect(response.statusCode).toBe(422);
+  });
+
   it('GET /stories/:id sur un brouillon répond 404', async () => {
     const token = await playerToken();
     const [draft] = await db.select().from(stories).where(eq(stories.published, false));

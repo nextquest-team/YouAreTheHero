@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { App } from '../../app.js';
 import { unauthorized } from '../../lib/errors.js';
 import * as authService from './service.js';
@@ -64,5 +65,20 @@ export default async function routes(app: App) {
     },
     preHandler: [app.authenticate],
     handler: async (request) => authService.updateMe(request.user.sub, request.body),
+  });
+
+  app.route({
+    method: 'DELETE',
+    url: '/me',
+    schema: {
+      tags: ['auth'],
+      security: [{ bearerAuth: [] }],
+      response: { 204: z.null().describe('Sans contenu') },
+    },
+    preHandler: [app.authenticate],
+    handler: async (request, reply) => {
+      await authService.deleteAccount(request.user.sub);
+      reply.code(204).send(null);
+    },
   });
 }

@@ -17,3 +17,8 @@ export function fetchMe(): Promise<User> {
 export function updateMe(input: { displayName?: string; avatarUrl?: string | null }): Promise<User> {
   return apiFetch<User>('/auth/me', { method: 'PATCH', body: input });
 }
+
+/** Suppression définitive du compte et de tout ce qui s'y rattache (RGPD). */
+export function deleteMe(): Promise<void> {
+  return apiFetch<void>('/auth/me', { method: 'DELETE' });
+}
