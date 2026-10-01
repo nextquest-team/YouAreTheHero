@@ -1,9 +1,11 @@
 import Feather from '@expo/vector-icons/Feather';
 import { Image } from 'expo-image';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import { AccessibilityInfo, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LiveText } from '@/components/common/LiveText';
 import { Hatch } from '@/components/common/Hatch';
 import { OvalPortrait } from '@/components/hero/OvalPortrait';
 import { useAuth } from '@/hooks/useAuth';
@@ -63,6 +65,8 @@ export function CombatScreen({ game, busy, error, onAttack, onUse, onQuit }: Pro
 
   return (
     <View style={[styles.root, { backgroundColor: gameColors.ink, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
+      {/* Fond d'encre dans les deux thèmes : l'heure et la batterie passent en clair */}
+      <StatusBar style="light" />
       <View style={styles.top}>
         <Pressable onPress={onQuit} accessibilityRole="button" accessibilityLabel={fr.game.quit} style={styles.iconButton}>
           <Feather name="chevron-left" size={24} color={gameColors.paper} />
@@ -170,9 +174,9 @@ export function CombatScreen({ game, busy, error, onAttack, onUse, onQuit }: Pro
       </View>
 
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={[styles.error, { color: gameColors.accentOnInk }]}>
+        <LiveText style={[styles.error, { color: gameColors.accentOnInk }]}>
           {error}
-        </Text>
+        </LiveText>
       ) : null}
 
       <Pressable

@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { type LayoutChangeEvent, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LiveText } from '@/components/common/LiveText';
 import { FaceOvalMask, faceOval } from '@/components/hero/FaceOvalMask';
 import { HeroPortrait } from '@/components/hero/HeroPortrait';
 import { Button } from '@/components/ui';
@@ -204,9 +205,9 @@ export default function SelfieScreen() {
         )}
 
         {error ? (
-          <Text style={[styles.error, { color: colors.danger }]} accessibilityLiveRegion="polite">
+          <LiveText style={[styles.error, { color: colors.danger }]}>
             {error}
-          </Text>
+          </LiveText>
         ) : null}
 
         <View style={styles.actions}>

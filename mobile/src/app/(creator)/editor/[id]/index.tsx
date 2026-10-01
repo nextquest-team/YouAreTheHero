@@ -2,6 +2,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, Text } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { LoadState } from '@/components/common/LoadState';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { EditorLink } from '@/components/editor/EditorLink';
@@ -123,14 +124,14 @@ export default function StoryEditorScreen() {
 
           {editor.busy ? <ActivityIndicator color={colors.accent} accessibilityLabel={fr.common.loading} /> : null}
           {editor.actionError ? (
-            <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+            <LiveText style={[typography.caption, { color: colors.danger }]}>
               {editor.actionError}
-            </Text>
+            </LiveText>
           ) : null}
           {notice ? (
-            <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.success }]}>
+            <LiveText style={[typography.caption, { color: colors.success }]}>
               {notice}
-            </Text>
+            </LiveText>
           ) : null}
 
           <Card>
@@ -145,9 +146,9 @@ export default function StoryEditorScreen() {
               <Text style={[typography.caption, { color: colors.textMuted }]}>{fr.storyEditor.publishHint}</Text>
             )}
             {justPublished ? (
-              <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.success }]}>
+              <LiveText style={[typography.caption, { color: colors.success }]}>
                 {fr.storyEditor.publishedDone}
-              </Text>
+              </LiveText>
             ) : null}
             {editor.report ? <PublishIssues report={editor.report} sceneTitles={sceneTitles} /> : null}
             {data.published ? (

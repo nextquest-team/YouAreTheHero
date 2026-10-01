@@ -2,6 +2,7 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { RoleToggle } from '@/components/auth/RoleToggle';
 import { Button, Input, Screen } from '@/components/ui';
@@ -100,9 +101,9 @@ export default function Register() {
             ) : null}
           </View>
           {formError ? (
-            <Text accessibilityLiveRegion="polite" style={[styles.formError, { color: colors.danger }]}>
+            <LiveText style={[styles.formError, { color: colors.danger }]}>
               {formError}
-            </Text>
+            </LiveText>
           ) : null}
         </View>
 

@@ -1,5 +1,6 @@
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { Button } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
@@ -12,11 +13,13 @@ type Props = {
   restarting: boolean;
   error?: string | null;
   onRestart: () => void;
+  // Présent quand l'histoire est terminée et que le joueur n'a pas encore donné son avis
+  onReview?: () => void;
   onBackToLibrary: () => void;
 };
 
 /** Écran plein affiché quand la partie est terminée (fin ou héros tombé). */
-export function EndScreen({ game, storyTitle, restarting, error, onRestart, onBackToLibrary }: Props) {
+export function EndScreen({ game, storyTitle, restarting, error, onRestart, onReview, onBackToLibrary }: Props) {
   const { colors } = useTheme();
   const dead = game.status === 'DEAD';
   const accentColor = dead ? colors.danger : colors.accent;
@@ -57,7 +60,11 @@ export function EndScreen({ game, storyTitle, restarting, error, onRestart, onBa
 
       <View style={styles.recap}>
         {recap.map((row, index) => (
-          <View key={`${index}-${row.label}`} style={[styles.recapRow, { borderTopWidth: hairline, borderTopColor: colors.borderStrong }]}>
+          <View
+            key={`${index}-${row.label}`}
+            accessible
+            accessibilityLabel={`${row.value} ${row.label}`}
+            style={[styles.recapRow, { borderTopWidth: hairline, borderTopColor: colors.borderStrong }]}>
             <Text style={[styles.recapValue, { color: accentColor }]}>{row.value}</Text>
             <Text style={[styles.recapLabel, { color: colors.textSoft }]}>{row.label}</Text>
           </View>
@@ -65,13 +72,19 @@ export function EndScreen({ game, storyTitle, restarting, error, onRestart, onBa
       </View>
 
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={[typography.label, { color: colors.danger }]}>
+        <LiveText style={[typography.label, { color: colors.danger }]}>
           {error}
-        </Text>
+        </LiveText>
       ) : null}
 
       <View style={styles.actions}>
-        <Button label={fr.game.replay} onPress={confirmRestart} loading={restarting} />
+        {onReview ? <Button label={fr.reviews.write} onPress={onReview} /> : null}
+        <Button
+          label={fr.game.replay}
+          variant={onReview ? 'secondary' : 'primary'}
+          onPress={confirmRestart}
+          loading={restarting}
+        />
         <Button label={fr.game.backToLibrary} variant="ghost" onPress={onBackToLibrary} />
       </View>
     </View>

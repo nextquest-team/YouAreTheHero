@@ -63,7 +63,8 @@ export function Gauge({ label, value, max, color, textColor, emptyColor, empty =
 }
 
 const styles = StyleSheet.create({
-  gauge: { flex: 1, gap: 6 },
+  // Grandit en ligne (pied de scène) sans s'écraser en colonne (combat), où flex: 1 la ramenait à 0
+  gauge: { flexGrow: 1, flexShrink: 1, gap: 6 },
   labels: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   label: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' },
   track: { flexDirection: 'row', gap: 3 },

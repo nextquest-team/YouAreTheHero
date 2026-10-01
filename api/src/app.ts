@@ -9,6 +9,8 @@ import { env } from './config/env.js';
 import { MAX_UPLOAD_BYTES } from './lib/uploads.js';
 import authRoutes from './modules/auth/routes.js';
 import catalogRoutes from './modules/catalog/routes.js';
+import favoritesRoutes from './modules/favorites/routes.js';
+import reviewsRoutes from './modules/reviews/routes.js';
 import creatorChoicesRoutes from './modules/creator/choices/routes.js';
 import creatorEnemiesRoutes from './modules/creator/enemies/routes.js';
 import creatorItemsRoutes from './modules/creator/items/routes.js';
@@ -64,6 +66,8 @@ export async function buildApp(opts: { logger?: boolean; roll?: () => number } =
   await app.register(creatorScenesRoutes);
   await app.register(creatorChoicesRoutes);
   await app.register(catalogRoutes);
+  await app.register(favoritesRoutes);
+  await app.register(reviewsRoutes);
   await app.register(playRoutes);
 
   app.get('/health', async () => ({ status: 'ok' as const }));

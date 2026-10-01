@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { LoadState } from '@/components/common/LoadState';
 import { StoryStatusBadge } from '@/components/editor/StoryStatusBadge';
 import { StoryCover } from '@/components/library/StoryCover';
@@ -88,9 +89,9 @@ export default function MyStories() {
             multiline
           />
           {createError ? (
-            <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+            <LiveText style={[typography.caption, { color: colors.danger }]}>
               {createError}
-            </Text>
+            </LiveText>
           ) : null}
           <View style={styles.formActions}>
             <Button label={fr.common.cancel} variant="ghost" onPress={() => setFormOpen(false)} style={styles.flex} />

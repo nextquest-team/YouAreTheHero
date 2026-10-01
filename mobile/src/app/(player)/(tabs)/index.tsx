@@ -21,12 +21,15 @@ export default function Library() {
   const genres = useGenres();
   const saves = useSaves();
   const reloadSaves = saves.reload;
+  const reloadStories = stories.reload;
 
-  // La partie en cours change après chaque session de jeu : on la relit au retour sur l'onglet.
+  // La partie en cours change après chaque session de jeu, et un favori a pu changer depuis
+  // la fiche : on relit les deux au retour sur l'onglet.
   useFocusEffect(
     useCallback(() => {
       reloadSaves();
-    }, [reloadSaves]),
+      reloadStories();
+    }, [reloadSaves, reloadStories]),
   );
 
   // Toutes les parties commencées : leur fiche passe « En cours » et remonte en tête de liste
@@ -40,18 +43,18 @@ export default function Library() {
     <Screen scroll>
       <View style={styles.header}>
         <View style={styles.brandRow}>
-          <Text style={[styles.brand, { color: colors.text }]} numberOfLines={1}>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.brand, { color: colors.text }]} numberOfLines={1}>
             {fr.library.brand}
           </Text>
           {stories.data ? (
-            <Text style={[styles.brand, { color: colors.accent }]} accessibilityLabel={fr.library.storyCount(count)}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.brand, { color: colors.accent }]} accessibilityLabel={fr.library.storyCount(count)}>
               {`Nº ${String(count).padStart(2, '0')}`}
             </Text>
           ) : null}
         </View>
         {/* Double filet d'en-tête de carnet */}
         <View style={[styles.doubleRule, { borderColor: colors.borderStrong }]} />
-        <Text accessibilityRole="header" style={[styles.headline, { color: colors.text }]}>
+        <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={[styles.headline, { color: colors.text }]}>
           {fr.library.headlineStart}
           <Text style={{ fontFamily: fonts.displayItalic, color: colors.accent }}>{fr.library.headlineAccent}</Text>
           {fr.library.headlineEnd}

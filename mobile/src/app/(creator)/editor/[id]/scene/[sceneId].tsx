@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { LoadState } from '@/components/common/LoadState';
 import { ChoiceForm } from '@/components/editor/ChoiceForm';
 import { describeCondition } from '@/components/editor/ConditionEditor';
@@ -122,9 +123,9 @@ export default function SceneScreen() {
         onSubmit={saveScene}
       />
       {notice ? (
-        <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.success }]}>
+        <LiveText style={[typography.caption, { color: colors.success }]}>
           {notice}
-        </Text>
+        </LiveText>
       ) : null}
 
       <Card>
@@ -190,9 +191,9 @@ export default function SceneScreen() {
         </>
       )}
       {editor.actionError ? (
-        <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+        <LiveText style={[typography.caption, { color: colors.danger }]}>
           {editor.actionError}
-        </Text>
+        </LiveText>
       ) : null}
     </Screen>
   );

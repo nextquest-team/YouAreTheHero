@@ -30,7 +30,7 @@ export function OptionChips<T extends string>({ label, options, value, onChange,
               disabled={disabled}
               accessibilityRole="radio"
               accessibilityLabel={option.label}
-              accessibilityState={{ selected, disabled }}
+              accessibilityState={{ checked: selected, disabled }}
               style={[
                 styles.chip,
                 selected

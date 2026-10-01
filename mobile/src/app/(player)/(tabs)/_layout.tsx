@@ -26,6 +26,13 @@ export default function PlayerTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="favorites"
+        options={{
+          title: fr.playerTabs.favorites,
+          tabBarIcon: ({ color, focused }) => <TabIcon name="heart" color={color} size={22} focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="saves"
         options={{
           title: fr.playerTabs.saves,

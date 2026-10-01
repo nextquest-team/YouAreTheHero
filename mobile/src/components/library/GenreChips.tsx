@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
@@ -27,17 +27,22 @@ export function GenreChips({ genres, value, onChange }: Props) {
             accessibilityRole="button"
             accessibilityLabel={option.label}
             accessibilityState={{ selected }}
-            // Pastille de 36 comme sur la maquette, zone tactile étendue à 44
-            hitSlop={{ top: 4, bottom: 4 }}
-            style={[
-              styles.chip,
-              selected
-                ? { backgroundColor: colors.primary, borderColor: colors.primary }
-                : { backgroundColor: 'transparent', borderColor: colors.borderStrong },
-            ]}
+            // Pastille de 36 comme sur la maquette, dans une cible réelle de 44 (hitSlop ne compte pas pour VoiceOver)
+            style={styles.target}
           >
-            {/* Sélection lisible sans la couleur : pastille pleine contre simple contour */}
-            <Text style={[styles.label, { color: selected ? colors.onPrimary : colors.text }]}>{option.label}</Text>
+            <View
+              style={[
+                styles.chip,
+                selected
+                  ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                  : { backgroundColor: 'transparent', borderColor: colors.borderStrong },
+              ]}
+            >
+              {/* Sélection lisible sans la couleur : pastille pleine contre simple contour */}
+              <Text maxFontSizeMultiplier={1.3} style={[styles.label, { color: selected ? colors.onPrimary : colors.text }]}>
+                {option.label}
+              </Text>
+            </View>
           </Pressable>
         );
       })}
@@ -46,8 +51,8 @@ export function GenreChips({ genres, value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  // Marge verticale : la zone tactile étendue reste dans le défilement
-  row: { gap: spacing.sm, paddingVertical: (touchTarget - CHIP_HEIGHT) / 2 },
+  row: { gap: spacing.sm },
+  target: { minHeight: touchTarget, justifyContent: 'center' },
   chip: {
     minHeight: CHIP_HEIGHT,
     paddingHorizontal: 14,

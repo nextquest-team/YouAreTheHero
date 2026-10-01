@@ -4,10 +4,14 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { DropCapText } from '@/components/common/DropCapText';
 import { LoadState } from '@/components/common/LoadState';
 import { parchment } from '@/components/common/parchment';
+import { FavoriteButton } from '@/components/library/FavoriteButton';
+import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { Button, Input, Screen } from '@/components/ui';
+import { useReviews } from '@/hooks/useReviews';
 import { useStory } from '@/hooks/useStories';
 import { useTheme } from '@/hooks/useTheme';
 import { errorMessage } from '@/i18n/errorMessage';
@@ -23,18 +27,23 @@ export default function StoryDetailScreen() {
   const { colors } = useTheme();
   const story = useStory(id);
   const reload = story.reload;
+  const reviews = useReviews(id);
+  const reloadReviews = reviews.reload;
   const [textStats, setTextStats] = useState<Record<string, string>>({});
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
-  // Au retour du jeu, l'état de la partie a changé : on relit la fiche.
+  // Au retour du jeu ou de l'avis, la partie et les avis ont changé : on relit la fiche.
   useFocusEffect(
     useCallback(() => {
       reload();
-    }, [reload]),
+      reloadReviews();
+    }, [reload, reloadReviews]),
   );
 
   const goBack = () => router.back();
+  const openReview = () =>
+    router.push({ pathname: '/review/[storyId]', params: { storyId: id, title: story.data?.title ?? '' } });
   const openGame = () => router.push({ pathname: '/play/[storyId]', params: { storyId: id } });
 
   const start = async () => {
@@ -94,6 +103,9 @@ export default function StoryDetailScreen() {
             >
               <Feather name="arrow-left" size={22} color={colors.text} />
             </Pressable>
+            <View style={styles.coverFavorite}>
+              <FavoriteButton storyId={data.id} initial={data.isFavorite} />
+            </View>
           </View>
 
           <View style={styles.body}>
@@ -109,7 +121,7 @@ export default function StoryDetailScreen() {
                   accessibilityRole="link"
                   accessibilityLabel={`${fr.storyDetail.by} ${data.author.displayName}`}
                   accessibilityHint={fr.storyDetail.authorHint}
-                  hitSlop={12}
+                  style={styles.authorTarget}
                 >
                   <Text style={[typography.caption, { color: colors.textMuted }]}>
                     {fr.storyDetail.by}{' '}
@@ -125,11 +137,6 @@ export default function StoryDetailScreen() {
                   </View>
                 ) : null}
               </View>
-              <Text style={[typography.caption, { color: colors.textMuted }]}>
-                {data.avgRating === null
-                  ? fr.storyDetail.noRating
-                  : `${fr.storyDetail.rating} : ${data.avgRating.toLocaleString('fr-FR')} / 5`}
-              </Text>
             </View>
 
             {data.summary ? (
@@ -150,7 +157,12 @@ export default function StoryDetailScreen() {
                 {numberDefs.length > 0 ? (
                   <View style={styles.statsGrid}>
                     {numberDefs.map((stat) => (
-                      <View key={stat.id} style={[styles.statCell, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                      <View
+                        key={stat.id}
+                        accessible
+                        accessibilityLabel={`${stat.name} ${stat.defaultValue}`}
+                        style={[styles.statCell, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                      >
                         <Text style={[typography.caption, { color: colors.textMuted }]}>{stat.name}</Text>
                         <Text style={[styles.statValue, { color: colors.text }]}>{stat.defaultValue}</Text>
                       </View>
@@ -174,9 +186,9 @@ export default function StoryDetailScreen() {
 
             <View style={styles.actions}>
               {startError ? (
-                <Text accessibilityLiveRegion="polite" style={[typography.label, { color: colors.danger }]}>
+                <LiveText style={[typography.label, { color: colors.danger }]}>
                   {startError}
-                </Text>
+                </LiveText>
               ) : null}
               {inProgress ? (
                 <>
@@ -193,6 +205,8 @@ export default function StoryDetailScreen() {
                 <Button label={fr.storyDetail.start} onPress={start} loading={starting} />
               )}
             </View>
+
+            <ReviewsSection reviews={reviews} onWrite={openReview} />
           </View>
         </>
       ) : null}
@@ -223,9 +237,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  coverFavorite: { position: 'absolute', top: spacing.lg, right: spacing.lg },
   body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.xxl, gap: spacing.xl },
   titleBlock: { gap: 8 },
   title: { fontFamily: fonts.display, fontSize: 34, lineHeight: 36 },
+  authorTarget: { minHeight: touchTarget, justifyContent: 'center' },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
   badge: {
     borderWidth: 1,
@@ -255,6 +271,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 2,
   },
-  statValue: { fontFamily: fonts.display, fontSize: 24, lineHeight: 28, fontVariant: ['lining-nums'] },
+  // Chiffres en mono : IM Fell n'a que des chiffres elzéviriens, où le 0 ressemble à un o
+  statValue: { fontFamily: fonts.monoBold, fontSize: 22, lineHeight: 28 },
   actions: { gap: spacing.sm, marginTop: spacing.sm },
 });

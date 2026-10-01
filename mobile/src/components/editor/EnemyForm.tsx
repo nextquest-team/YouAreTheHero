@@ -2,6 +2,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { Button, Card, Input } from '@/components/ui';
 import type { FieldError } from '@/hooks/useEntityEditor';
 import { useTheme } from '@/hooks/useTheme';
@@ -160,9 +161,9 @@ export function EnemyForm({ enemy, stats, items, busy, fieldError, error, onSubm
           </View>
         ))}
         {errors.extraStats ?? serverError('extraStats') ? (
-          <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+          <LiveText style={[typography.caption, { color: colors.danger }]}>
             {errors.extraStats ?? serverError('extraStats')}
-          </Text>
+          </LiveText>
         ) : null}
         {extras.length < MAX_EXTRA ? (
           <Button
@@ -185,9 +186,9 @@ export function EnemyForm({ enemy, stats, items, busy, fieldError, error, onSubm
       />
 
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+        <LiveText style={[typography.caption, { color: colors.danger }]}>
           {error}
-        </Text>
+        </LiveText>
       ) : null}
       <View style={styles.actions}>
         <Button label={fr.common.cancel} variant="ghost" onPress={onCancel} style={styles.flex} />

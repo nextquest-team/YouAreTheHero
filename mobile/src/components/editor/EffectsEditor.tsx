@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { Button, Input } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
@@ -134,9 +135,9 @@ export function EffectsEditor({ label, hint, drafts, onChange, stats, items, err
       })}
 
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+        <LiveText style={[typography.caption, { color: colors.danger }]}>
           {error}
-        </Text>
+        </LiveText>
       ) : null}
 
       {disabled ? null : canAdd ? (

@@ -5,6 +5,7 @@ import { fr } from '@/i18n/fr';
 import { fonts, hairline, offsetShadow, radius, spacing } from '@/theme';
 import type { StorySummary } from '@/types/api';
 
+import { DogEar } from './DogEar';
 import { type CoverVariant, StoryCover } from './StoryCover';
 
 type Props = { story: StorySummary; inProgress?: boolean; coverVariant?: CoverVariant; onPress: () => void };
@@ -21,7 +22,7 @@ export function StoryCard({ story, inProgress = false, coverVariant = 0, onPress
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${story.title}, ${fr.library.by} ${story.author.displayName}, ${story.genre}, ${status}`}
+      accessibilityLabel={`${story.title}, ${fr.library.by} ${story.author.displayName}, ${story.genre}, ${status}${story.isFavorite ? `, ${fr.favorites.inFavorites}` : ''}`}
       accessibilityHint={inProgress ? fr.library.resume : undefined}
       style={({ pressed }) => [
         styles.card,
@@ -31,10 +32,18 @@ export function StoryCard({ story, inProgress = false, coverVariant = 0, onPress
     >
       <StoryCover uri={story.coverUrl} title={story.title} width={84} height={124} variant={coverVariant} />
       <View style={styles.body}>
-        <Text style={[styles.overline, { color: story.hasCombat || inProgress ? colors.accent : colors.textMuted }]} numberOfLines={1}>
+        <Text
+          maxFontSizeMultiplier={1.3}
+          style={[
+            styles.overline,
+            { color: story.hasCombat || inProgress ? colors.accent : colors.textMuted },
+            story.isFavorite && styles.clearDogEar,
+          ]}
+          numberOfLines={1}
+        >
           {`${story.genre} · ${status}`}
         </Text>
-        <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+        <Text maxFontSizeMultiplier={1.5} style={[styles.title, { color: colors.text }]} numberOfLines={2}>
           {story.title}
         </Text>
         {story.summary ? (
@@ -43,12 +52,15 @@ export function StoryCard({ story, inProgress = false, coverVariant = 0, onPress
           </Text>
         ) : null}
         <View style={styles.footer}>
-          <Text style={[styles.meta, styles.author, { color: colors.textMuted }]} numberOfLines={1}>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.meta, styles.author, { color: colors.textMuted }]} numberOfLines={1}>
             {`${fr.library.by} ${story.author.displayName}`}
           </Text>
-          <Text style={[styles.meta, { color: inProgress ? colors.accent : colors.text }]}>{action}</Text>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.meta, { color: inProgress ? colors.accent : colors.text }]}>
+            {action}
+          </Text>
         </View>
       </View>
+      {story.isFavorite ? <DogEar /> : null}
     </Pressable>
   );
 }
@@ -64,6 +76,8 @@ const styles = StyleSheet.create({
   pressed: { transform: [{ translateX: 2 }, { translateY: 2 }], boxShadow: 'none' },
   body: { flex: 1, gap: 5 },
   overline: { fontFamily: fonts.monoBold, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase' },
+  // Le coin corné fait 26 pt : l'étiquette s'arrête avant
+  clearDogEar: { paddingRight: 22 },
   title: { fontFamily: fonts.display, fontSize: 23, lineHeight: 25 },
   summary: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19 },
   footer: { marginTop: 'auto', flexDirection: 'row', alignItems: 'baseline', gap: 8 },

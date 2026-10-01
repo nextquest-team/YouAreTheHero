@@ -17,7 +17,7 @@ export function HeroBar({ game, itemCount, onOpenSheet }: Props) {
   const countLabel = itemCount > 1 ? fr.game.itemCountPlural : fr.game.itemCountSingular;
 
   return (
-    <View accessibilityLabel={fr.game.sheet} style={[styles.bar, { backgroundColor: gameColors.ink }]}>
+    <View style={[styles.bar, { backgroundColor: gameColors.ink }]}>
       {hp ? (
         <Gauge
           label={hp.name}

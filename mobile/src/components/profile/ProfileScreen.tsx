@@ -1,11 +1,11 @@
 import { type ReactNode, useState } from 'react';
-import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 
-import { Button, Card, Screen } from '@/components/ui';
+import { Button, Screen, SwitchRow } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
-import { fonts, typography } from '@/theme';
+import { typography } from '@/theme';
 
 type Props = {
   // Branché sur l'AuthProvider de B ; le bouton n'apparaît qu'une fois fourni
@@ -55,22 +55,12 @@ export function ProfileScreen({ onLogout, children }: Props) {
         <Text style={[typography.overline, { color: colors.textMuted }]}>
           {fr.profile.appearance}
         </Text>
-        <Card style={styles.row}>
-          <View style={styles.rowText}>
-            <Text style={[styles.rowTitle, { color: colors.text }]}>{fr.profile.darkMode}</Text>
-            <Text style={[typography.caption, { color: colors.textMuted }]}>
-              {fr.profile.darkModeHint}
-            </Text>
-          </View>
-          <Switch
-            value={isDark}
-            onValueChange={(on) => setScheme(on ? 'dark' : 'light')}
-            accessibilityLabel={fr.profile.darkMode}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.surface}
-            ios_backgroundColor={colors.border}
-          />
-        </Card>
+        <SwitchRow
+          label={fr.profile.darkMode}
+          hint={fr.profile.darkModeHint}
+          value={isDark}
+          onValueChange={(on) => setScheme(on ? 'dark' : 'light')}
+        />
       </View>
 
       {onLogout && (
@@ -93,7 +83,4 @@ export function ProfileScreen({ onLogout, children }: Props) {
 
 const styles = StyleSheet.create({
   section: { gap: 10 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  rowText: { flex: 1, gap: 2 },
-  rowTitle: { fontFamily: fonts.bodyBold, fontSize: 15 },
 });

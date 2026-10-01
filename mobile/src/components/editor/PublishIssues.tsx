@@ -1,6 +1,7 @@
 import Feather from '@expo/vector-icons/Feather';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useAnnounce } from '@/components/common/LiveText';
 import type { PublishReport } from '@/hooks/useMyStories';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
@@ -16,15 +17,24 @@ type Props = {
 /** Résultat de la vérification avant publication : erreurs bloquantes, puis avertissements. */
 export function PublishIssues({ report, sceneTitles }: Props) {
   const { colors } = useTheme();
+  // Annoncé d'un bloc après « Publier » : le nombre d'erreurs puis chacune d'elles.
+  useAnnounce(
+    [
+      report.errors.length > 0 ? `${fr.storyEditor.errorsTitle} : ${report.errors.map((issue) => issue.message).join('. ')}` : '',
+      report.warnings.length > 0 ? `${fr.storyEditor.warningsTitle} : ${report.warnings.map((issue) => issue.message).join('. ')}` : '',
+    ]
+      .filter(Boolean)
+      .join('. '),
+  );
 
   const renderList = (title: string, issues: PublishIssue[], color: string, icon: 'x-circle' | 'alert-triangle') => (
-    <View style={styles.group} accessibilityLiveRegion="polite">
+    <View style={styles.group}>
       <Text style={[typography.label, { color }]}>{title}</Text>
       {issues.map((issue, index) => {
         const scene = issue.sceneId ? sceneTitles.get(issue.sceneId) : undefined;
         return (
           <View key={`${issue.code}-${issue.sceneId ?? ''}-${index}`} style={styles.issue}>
-            <Feather name={icon} size={16} color={color} style={styles.icon} />
+            <Feather name={icon} size={16} color={color} style={styles.icon} accessibilityElementsHidden importantForAccessibility="no" />
             <Text style={[typography.caption, styles.issueText, { color: colors.text }]}>
               {issue.message}
               {scene ? <Text style={{ color: colors.textMuted }}>{`\n${fr.storyEditor.sceneLabel} : ${scene}`}</Text> : null}
