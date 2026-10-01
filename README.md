@@ -1,9 +1,17 @@
+<p align="center">
+  <img src="mobile/assets/images/icon.png" alt="Logo You Are The Hero" width="160">
+</p>
+
 # You Are The Hero
 
 Application mobile de « livres dont vous êtes le héros ».
 
 - Un **créateur** écrit des histoires : scènes, choix, caractéristiques du héros, ennemis et objets, avec une médiathèque pour ses images. Une histoire peut être avec ou sans combats.
 - Un **joueur** les parcourt, avec des choix conditionnels, des combats, un inventaire et des parties sauvegardées. Il peut prendre un selfie comme portrait de son héros, mettre des histoires en favoris, consulter la page d'un auteur et laisser un avis sur une histoire qu'il a terminée.
+
+| Bibliothèque | Fiche d'une histoire | Scène | Combat | Espace créateur |
+| :---: | :---: | :---: | :---: | :---: |
+| <img src="docs/images/bibliotheque.png" alt="Bibliothèque des histoires publiées" width="160"> | <img src="docs/images/fiche-histoire.png" alt="Fiche des Pirates de la Mer d'Encre" width="160"> | <img src="docs/images/scene.png" alt="Scène de Station Borealis avec ses choix" width="160"> | <img src="docs/images/combat.png" alt="Combat contre Bosco Malgrin" width="160"> | <img src="docs/images/mes-histoires.png" alt="Liste des histoires d'un créateur" width="160"> |
 
 ## Stack
 
@@ -106,7 +114,7 @@ La CI relance ces commandes sur chaque PR. Une PR dont les checks sont rouges ne
   - `api/src/engine/` : le moteur de jeu (conditions, effets, combats)
   - `api/src/db/` : le schéma Drizzle et le seed (`seed-stories/`, une histoire par fichier) ; `api/drizzle/` : les migrations ; `api/seed-assets/` : les images du seed
 - `tools/illustrations/` : les scripts Python qui dessinent les illustrations des histoires du seed (`pip install pillow`, puis `python3 export.py`, qui les exporte dans `api/seed-assets/`)
-- `docs/conception.md` : la conception (périmètre, modèle de données, règles, contrat d'API)
+- `docs/conception.md` : la conception (périmètre, modèle de données, règles, contrat d'API), et `docs/images/` les captures de ce README
 - `.github/workflows/` : la CI (`mobile`, `api`) et la publication de l'image de l'API
 
 ## Workflow Git
