@@ -2,6 +2,7 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { Button, Input, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
@@ -71,9 +72,9 @@ export default function Login() {
             onSubmitEditing={submit}
           />
           {formError ? (
-            <Text accessibilityLiveRegion="polite" style={[styles.formError, { color: colors.danger }]}>
+            <LiveText style={[styles.formError, { color: colors.danger }]}>
               {formError}
-            </Text>
+            </LiveText>
           ) : null}
         </View>
 

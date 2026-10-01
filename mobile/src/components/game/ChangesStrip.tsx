@@ -9,7 +9,8 @@ type Props = { changes: GameState['changes'] };
 
 /**
  * Ce que la dernière action a changé (« +1 Clé rouillée », « Force 5 → 6 »), en tampons
- * penchés, annoncé par VoiceOver. Le signe écrit distingue gain et perte, pas la couleur.
+ * penchés. Le signe écrit distingue gain et perte, pas la couleur. L'écran de jeu annonce
+ * ces changements à VoiceOver avec le titre de la nouvelle scène.
  */
 export function ChangesStrip({ changes }: Props) {
   const { colors } = useTheme();
@@ -18,7 +19,6 @@ export function ChangesStrip({ changes }: Props) {
   return (
     <View
       accessible
-      accessibilityLiveRegion="polite"
       accessibilityLabel={`${fr.game.changesTitle} : ${changes.map((change) => change.label).join(', ')}`}
       style={styles.row}
     >

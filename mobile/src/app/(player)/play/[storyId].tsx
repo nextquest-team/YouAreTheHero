@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LiveText, useAnnounce } from '@/components/common/LiveText';
 import { DropCapText } from '@/components/common/DropCapText';
 import { Hatch } from '@/components/common/Hatch';
 import { LoadState } from '@/components/common/LoadState';
@@ -54,6 +55,14 @@ export default function PlayScreen() {
   useEffect(() => {
     if (finished) reloadReviews();
   }, [finished, reloadReviews]);
+  // Nouvelle scène : VoiceOver lit son titre et ce qui a changé, sans qu'il faille remonter l'écran.
+  useAnnounce(
+    game && !game.combat && game.status === 'IN_PROGRESS'
+      ? [game.scene.title, game.changes.length > 0 ? `${fr.game.changesTitle} : ${game.changes.map((change) => change.label).join(', ')}` : '']
+          .filter(Boolean)
+          .join('. ')
+      : null,
+  );
   const openReview = () =>
     router.push({ pathname: '/review/[storyId]', params: { storyId, title: storyMeta.data?.title ?? '' } });
 
@@ -169,9 +178,9 @@ export default function PlayScreen() {
               <ChangesStrip changes={game.changes} />
 
               {error ? (
-                <Text accessibilityLiveRegion="polite" style={[typography.label, { color: colors.danger }]}>
+                <LiveText style={[typography.label, { color: colors.danger }]}>
                   {error}
-                </Text>
+                </LiveText>
               ) : null}
 
               <ChoiceList choices={game.choices} disabled={busy} onChoose={choose} />

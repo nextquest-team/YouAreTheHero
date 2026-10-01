@@ -4,6 +4,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { DropCapText } from '@/components/common/DropCapText';
 import { LoadState } from '@/components/common/LoadState';
 import { parchment } from '@/components/common/parchment';
@@ -120,7 +121,7 @@ export default function StoryDetailScreen() {
                   accessibilityRole="link"
                   accessibilityLabel={`${fr.storyDetail.by} ${data.author.displayName}`}
                   accessibilityHint={fr.storyDetail.authorHint}
-                  hitSlop={12}
+                  style={styles.authorTarget}
                 >
                   <Text style={[typography.caption, { color: colors.textMuted }]}>
                     {fr.storyDetail.by}{' '}
@@ -156,7 +157,12 @@ export default function StoryDetailScreen() {
                 {numberDefs.length > 0 ? (
                   <View style={styles.statsGrid}>
                     {numberDefs.map((stat) => (
-                      <View key={stat.id} style={[styles.statCell, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                      <View
+                        key={stat.id}
+                        accessible
+                        accessibilityLabel={`${stat.name} ${stat.defaultValue}`}
+                        style={[styles.statCell, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                      >
                         <Text style={[typography.caption, { color: colors.textMuted }]}>{stat.name}</Text>
                         <Text style={[styles.statValue, { color: colors.text }]}>{stat.defaultValue}</Text>
                       </View>
@@ -180,9 +186,9 @@ export default function StoryDetailScreen() {
 
             <View style={styles.actions}>
               {startError ? (
-                <Text accessibilityLiveRegion="polite" style={[typography.label, { color: colors.danger }]}>
+                <LiveText style={[typography.label, { color: colors.danger }]}>
                   {startError}
-                </Text>
+                </LiveText>
               ) : null}
               {inProgress ? (
                 <>
@@ -235,6 +241,7 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.xxl, gap: spacing.xl },
   titleBlock: { gap: 8 },
   title: { fontFamily: fonts.display, fontSize: 34, lineHeight: 36 },
+  authorTarget: { minHeight: touchTarget, justifyContent: 'center' },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
   badge: {
     borderWidth: 1,
@@ -264,6 +271,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: 2,
   },
-  statValue: { fontFamily: fonts.display, fontSize: 24, lineHeight: 28, fontVariant: ['lining-nums'] },
+  // Chiffres en mono : IM Fell n'a que des chiffres elzéviriens, où le 0 ressemble à un o
+  statValue: { fontFamily: fonts.monoBold, fontSize: 22, lineHeight: 28 },
   actions: { gap: spacing.sm, marginTop: spacing.sm },
 });

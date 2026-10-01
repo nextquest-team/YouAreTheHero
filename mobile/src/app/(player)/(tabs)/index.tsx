@@ -43,18 +43,18 @@ export default function Library() {
     <Screen scroll>
       <View style={styles.header}>
         <View style={styles.brandRow}>
-          <Text style={[styles.brand, { color: colors.text }]} numberOfLines={1}>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.brand, { color: colors.text }]} numberOfLines={1}>
             {fr.library.brand}
           </Text>
           {stories.data ? (
-            <Text style={[styles.brand, { color: colors.accent }]} accessibilityLabel={fr.library.storyCount(count)}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.brand, { color: colors.accent }]} accessibilityLabel={fr.library.storyCount(count)}>
               {`Nº ${String(count).padStart(2, '0')}`}
             </Text>
           ) : null}
         </View>
         {/* Double filet d'en-tête de carnet */}
         <View style={[styles.doubleRule, { borderColor: colors.borderStrong }]} />
-        <Text accessibilityRole="header" style={[styles.headline, { color: colors.text }]}>
+        <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={[styles.headline, { color: colors.text }]}>
           {fr.library.headlineStart}
           <Text style={{ fontFamily: fonts.displayItalic, color: colors.accent }}>{fr.library.headlineAccent}</Text>
           {fr.library.headlineEnd}

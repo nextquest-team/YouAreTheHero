@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { Button, Card, Input } from '@/components/ui';
+import { LiveText } from '@/components/common/LiveText';
+import { Button, Card, Input, SwitchRow } from '@/components/ui';
 import type { FieldError } from '@/hooks/useEntityEditor';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
 import type { Scene, SceneInput } from '@/types/api';
-import { fonts, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
 
 import { EffectDraft, EffectsEditor, fromDrafts, toDrafts } from './EffectsEditor';
 import { ImagePickerField } from './ImagePickerField';
@@ -98,22 +99,13 @@ export function SceneForm({ scene, scenes, enemies, stats, items, hasCombat, loc
         style={styles.text}
       />
 
-      <Card style={styles.switchRow}>
-        <View style={styles.switchText}>
-          <Text style={[styles.switchLabel, { color: colors.text }]}>{fr.scenes.ending}</Text>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>{fr.scenes.endingHint}</Text>
-        </View>
-        <Switch
-          value={isEnding}
-          onValueChange={setIsEnding}
-          disabled={locked}
-          accessibilityLabel={fr.scenes.ending}
-          accessibilityHint={fr.scenes.endingHint}
-          trackColor={{ false: colors.border, true: colors.primary }}
-          thumbColor={colors.surface}
-          ios_backgroundColor={colors.border}
-        />
-      </Card>
+      <SwitchRow
+        label={fr.scenes.ending}
+        hint={fr.scenes.endingHint}
+        value={isEnding}
+        onValueChange={setIsEnding}
+        disabled={locked}
+      />
 
       {showCombat ? (
         <Card>
@@ -135,9 +127,9 @@ export function SceneForm({ scene, scenes, enemies, stats, items, hasCombat, loc
             />
           )}
           {serverError('enemyId') ? (
-            <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+            <LiveText style={[typography.caption, { color: colors.danger }]}>
               {serverError('enemyId')}
-            </Text>
+            </LiveText>
           ) : null}
           {enemyId ? (
             <>
@@ -174,9 +166,9 @@ export function SceneForm({ scene, scenes, enemies, stats, items, hasCombat, loc
       />
 
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+        <LiveText style={[typography.caption, { color: colors.danger }]}>
           {error}
-        </Text>
+        </LiveText>
       ) : null}
       {locked ? null : <Button label={fr.common.save} icon="check" onPress={submit} loading={busy} />}
     </View>
@@ -186,7 +178,4 @@ export function SceneForm({ scene, scenes, enemies, stats, items, hasCombat, loc
 const styles = StyleSheet.create({
   form: { gap: spacing.lg },
   text: { minHeight: 180 },
-  switchRow: { flexDirection: 'row', alignItems: 'center' },
-  switchText: { flex: 1, gap: 2 },
-  switchLabel: { fontFamily: fonts.bodyBold, fontSize: 16 },
 });

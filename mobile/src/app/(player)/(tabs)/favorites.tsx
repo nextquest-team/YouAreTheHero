@@ -36,17 +36,17 @@ export default function Favorites() {
     <Screen scroll>
       <View style={styles.header}>
         <View style={styles.brandRow}>
-          <Text style={[styles.brand, { color: colors.text }]} numberOfLines={1}>
+          <Text maxFontSizeMultiplier={1.3} style={[styles.brand, { color: colors.text }]} numberOfLines={1}>
             {fr.library.brand}
           </Text>
           {favorites.data ? (
-            <Text style={[styles.brand, { color: colors.accent }]} accessibilityLabel={fr.favorites.count(count)}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.brand, { color: colors.accent }]} accessibilityLabel={fr.favorites.count(count)}>
               {`Nº ${String(count).padStart(2, '0')}`}
             </Text>
           ) : null}
         </View>
         <View style={[styles.doubleRule, { borderColor: colors.borderStrong }]} />
-        <Text accessibilityRole="header" style={[styles.headline, { color: colors.text }]}>
+        <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={[styles.headline, { color: colors.text }]}>
           {fr.favorites.headlineStart}
           <Text style={{ fontFamily: fonts.displayItalic, color: colors.accent }}>{fr.favorites.headlineAccent}</Text>
           {fr.favorites.headlineEnd}

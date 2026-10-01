@@ -2,6 +2,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { LoadState } from '@/components/common/LoadState';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { SceneTags } from '@/components/editor/SceneTags';
@@ -108,9 +109,9 @@ export default function ScenesScreen() {
                 autoFocus
               />
               {scenes.error ? (
-                <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+                <LiveText style={[typography.caption, { color: colors.danger }]}>
                   {scenes.error}
-                </Text>
+                </LiveText>
               ) : null}
               <View style={styles.actions}>
                 <Button label={fr.common.cancel} variant="ghost" onPress={() => setCreating(false)} style={styles.flex} />

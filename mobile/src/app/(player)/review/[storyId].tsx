@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { RatingPicker } from '@/components/reviews/RatingPicker';
 import { Button, Input, Screen } from '@/components/ui';
 import { useReviews } from '@/hooks/useReviews';
@@ -71,13 +72,13 @@ export default function ReviewScreen() {
         </View>
 
         {reviews.error ? (
-          <Text accessibilityLiveRegion="polite" accessibilityRole="alert" style={[typography.label, { color: colors.danger }]}>
+          <LiveText accessibilityRole="alert" style={[typography.label, { color: colors.danger }]}>
             {reviews.error}
-          </Text>
+          </LiveText>
         ) : null}
 
         <Button
-          label={fr.reviews.publish}
+          label={reviews.mine ? fr.reviews.update : fr.reviews.publish}
           onPress={publish}
           loading={reviews.submitting}
           disabled={rating === 0}

@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { Button } from '@/components/ui';
 import { ImageSource, useImagePicker } from '@/hooks/useImagePicker';
 import { useTheme } from '@/hooks/useTheme';
@@ -68,9 +69,9 @@ export function ImagePickerField({ label, value, onChange, height = 180 }: Props
       </View>
 
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={[styles.error, { color: colors.danger }]}>
+        <LiveText style={[styles.error, { color: colors.danger }]}>
           {error}
-        </Text>
+        </LiveText>
       ) : null}
     </View>
   );

@@ -111,8 +111,9 @@ function reviewLabel(review: Review, who: string) {
 const styles = StyleSheet.create({
   section: { gap: 14 },
   score: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  scoreNum: { fontFamily: fonts.display, fontSize: 52, lineHeight: 56, fontVariant: ['lining-nums'] },
-  scoreMax: { fontSize: 22 },
+  // Chiffres en mono : IM Fell n'a que des chiffres elzéviriens
+  scoreNum: { fontFamily: fonts.monoBold, fontSize: 44, lineHeight: 52 },
+  scoreMax: { fontFamily: fonts.mono, fontSize: 18 },
   scoreSide: { gap: 4 },
   noScore: { gap: 4 },
   noScoreTitle: { fontFamily: fonts.display, fontSize: 28, lineHeight: 32 },

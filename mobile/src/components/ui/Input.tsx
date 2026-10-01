@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { useTheme } from '@/hooks/useTheme';
 import { fonts, hairline, radius, spacing, touchTarget } from '@/theme';
 
@@ -11,18 +12,21 @@ type Props = TextInputProps & {
   variant?: 'boxed' | 'underline';
 };
 
-export function Input({ label, error, multiline, variant = 'boxed', style, ...rest }: Props) {
+export function Input({ label, error, multiline, variant = 'boxed', style, accessibilityHint, ...rest }: Props) {
   const { colors } = useTheme();
   const id = useId();
 
   return (
     <View style={styles.field}>
-      <Text nativeID={id} style={[styles.label, { color: colors.textMuted }]}>
+      {/* Déjà lu comme libellé du champ : VoiceOver ne le relit pas à part */}
+      <Text nativeID={id} accessibilityElementsHidden importantForAccessibility="no" style={[styles.label, { color: colors.textMuted }]}>
         {label}
       </Text>
       <TextInput
         accessibilityLabel={label}
         accessibilityLabelledBy={id}
+        // L'erreur est relue quand on revient sur le champ, pas seulement annoncée une fois
+        accessibilityHint={error ?? accessibilityHint}
         placeholderTextColor={colors.textMuted}
         multiline={multiline}
         style={[
@@ -37,9 +41,9 @@ export function Input({ label, error, multiline, variant = 'boxed', style, ...re
         {...rest}
       />
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={[styles.error, { color: colors.danger }]}>
+        <LiveText style={[styles.error, { color: colors.danger }]}>
           {error}
-        </Text>
+        </LiveText>
       ) : null}
     </View>
   );

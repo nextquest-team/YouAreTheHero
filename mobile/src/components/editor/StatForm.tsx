@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { Button, Card, Input } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
@@ -86,9 +87,9 @@ export function StatForm({ stat, busy, fieldError, error, onSubmit, onCancel, on
         onChange={setType}
       />
       {errorFor('type') ? (
-        <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+        <LiveText style={[typography.caption, { color: colors.danger }]}>
           {errorFor('type')}
-        </Text>
+        </LiveText>
       ) : null}
       <Input
         label={isNumber ? fr.stats.defaultNumber : fr.stats.defaultText}
@@ -126,9 +127,9 @@ export function StatForm({ stat, busy, fieldError, error, onSubmit, onCancel, on
         </View>
       ) : null}
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+        <LiveText style={[typography.caption, { color: colors.danger }]}>
           {error}
-        </Text>
+        </LiveText>
       ) : null}
       <View style={styles.actions}>
         <Button label={fr.common.cancel} variant="ghost" onPress={onCancel} style={styles.flex} />

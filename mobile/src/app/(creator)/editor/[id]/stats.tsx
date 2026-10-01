@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { LoadState } from '@/components/common/LoadState';
 import { confirmRemove } from '@/components/editor/confirm';
 import { EditorHeader } from '@/components/editor/EditorHeader';
@@ -149,9 +150,9 @@ export default function StatsScreen() {
                 </>
               )}
               {editor.actionError ? (
-                <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+                <LiveText style={[typography.caption, { color: colors.danger }]}>
                   {editor.actionError}
-                </Text>
+                </LiveText>
               ) : null}
             </Card>
           ) : null}

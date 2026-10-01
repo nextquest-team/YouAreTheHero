@@ -1,5 +1,6 @@
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { Button } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
@@ -59,7 +60,11 @@ export function EndScreen({ game, storyTitle, restarting, error, onRestart, onRe
 
       <View style={styles.recap}>
         {recap.map((row, index) => (
-          <View key={`${index}-${row.label}`} style={[styles.recapRow, { borderTopWidth: hairline, borderTopColor: colors.borderStrong }]}>
+          <View
+            key={`${index}-${row.label}`}
+            accessible
+            accessibilityLabel={`${row.value} ${row.label}`}
+            style={[styles.recapRow, { borderTopWidth: hairline, borderTopColor: colors.borderStrong }]}>
             <Text style={[styles.recapValue, { color: accentColor }]}>{row.value}</Text>
             <Text style={[styles.recapLabel, { color: colors.textSoft }]}>{row.label}</Text>
           </View>
@@ -67,9 +72,9 @@ export function EndScreen({ game, storyTitle, restarting, error, onRestart, onRe
       </View>
 
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={[typography.label, { color: colors.danger }]}>
+        <LiveText style={[typography.label, { color: colors.danger }]}>
           {error}
-        </Text>
+        </LiveText>
       ) : null}
 
       <View style={styles.actions}>

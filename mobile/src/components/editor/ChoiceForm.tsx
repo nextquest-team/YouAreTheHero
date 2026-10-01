@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { Button, Card, Input } from '@/components/ui';
 import type { FieldError } from '@/hooks/useEntityEditor';
 import { useTheme } from '@/hooks/useTheme';
@@ -80,9 +81,9 @@ export function ChoiceForm({ choice, scenes, stats, items, busy, fieldError, err
         onChange={setToSceneId}
       />
       {errors.toSceneId ?? serverError('toSceneId') ? (
-        <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+        <LiveText style={[typography.caption, { color: colors.danger }]}>
           {errors.toSceneId ?? serverError('toSceneId')}
-        </Text>
+        </LiveText>
       ) : null}
 
       <ConditionEditor
@@ -104,9 +105,9 @@ export function ChoiceForm({ choice, scenes, stats, items, busy, fieldError, err
       />
 
       {error ? (
-        <Text accessibilityLiveRegion="polite" style={[typography.caption, { color: colors.danger }]}>
+        <LiveText style={[typography.caption, { color: colors.danger }]}>
           {error}
-        </Text>
+        </LiveText>
       ) : null}
       <View style={styles.actions}>
         <Button label={fr.common.cancel} variant="ghost" onPress={onCancel} style={styles.flex} />

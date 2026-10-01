@@ -14,7 +14,7 @@ export function AuthHeader({ compact = false }: Props) {
     // Maquette d'inscription : petit fil d'Ariane (icône + nom), pas de tagline.
     return (
       <View style={styles.row}>
-        <Feather name="book-open" size={26} color={colors.accent} />
+        <Feather name="book-open" size={26} color={colors.accent} accessibilityElementsHidden importantForAccessibility="no" />
         <Text style={[styles.wordmark, { color: colors.text }]}>{fr.auth.appName}</Text>
       </View>
     );
@@ -22,7 +22,7 @@ export function AuthHeader({ compact = false }: Props) {
 
   return (
     <View style={styles.header}>
-      <Feather name="book-open" size={64} color={colors.accent} />
+      <Feather name="book-open" size={64} color={colors.accent} accessibilityElementsHidden importantForAccessibility="no" />
       <Text accessibilityRole="header" style={[styles.title, { color: colors.text }]}>
         {fr.auth.appName}
       </Text>

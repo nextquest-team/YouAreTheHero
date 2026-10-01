@@ -1,5 +1,6 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
+import { LiveText } from '@/components/common/LiveText';
 import { Button } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { errorMessage } from '@/i18n/errorMessage';
@@ -19,9 +20,9 @@ export function LoadState({ loading, error, onRetry }: Props) {
   if (error) {
     return (
       <View style={styles.box}>
-        <Text accessibilityLiveRegion="polite" style={[typography.body, styles.text, { color: colors.textMuted }]}>
+        <LiveText style={[typography.body, styles.text, { color: colors.textMuted }]}>
           {errorMessage(error)}
-        </Text>
+        </LiveText>
         <Button label={fr.library.retry} variant="secondary" icon="refresh-cw" onPress={onRetry} />
       </View>
     );

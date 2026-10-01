@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { StoryCover } from '@/components/library/StoryCover';
-import { Button, Card, Input } from '@/components/ui';
-import { useTheme } from '@/hooks/useTheme';
+import { Button, Input, SwitchRow } from '@/components/ui';
 import { fr } from '@/i18n/fr';
 import type { CreatorStory, UpdateStoryInput } from '@/types/api';
-import { fonts, spacing, typography } from '@/theme';
+import { spacing } from '@/theme';
 
 import { ImagePickerField } from './ImagePickerField';
 
@@ -26,7 +25,6 @@ const COVER_HEIGHT = 200;
  * Une histoire publiée est en lecture seule (l'API répond 409 STORY_PUBLISHED sinon).
  */
 export function StoryInfoForm({ story, busy, onSave, onCoverChange }: Props) {
-  const { colors } = useTheme();
   const [title, setTitle] = useState(story.title);
   const [genre, setGenre] = useState(story.genre);
   const [summary, setSummary] = useState(story.summary);
@@ -84,22 +82,13 @@ export function StoryInfoForm({ story, busy, onSave, onCoverChange }: Props) {
         multiline
       />
 
-      <Card style={styles.switchRow}>
-        <View style={styles.switchText}>
-          <Text style={[styles.switchLabel, { color: colors.text }]}>{fr.storyEditor.combatLabel}</Text>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>{fr.storyEditor.combatHint}</Text>
-        </View>
-        <Switch
-          value={hasCombat}
-          onValueChange={setHasCombat}
-          disabled={locked}
-          accessibilityLabel={fr.storyEditor.combatLabel}
-          accessibilityHint={fr.storyEditor.combatHint}
-          trackColor={{ false: colors.border, true: colors.primary }}
-          thumbColor={colors.surface}
-          ios_backgroundColor={colors.border}
-        />
-      </Card>
+      <SwitchRow
+        label={fr.storyEditor.combatLabel}
+        hint={fr.storyEditor.combatHint}
+        value={hasCombat}
+        onValueChange={setHasCombat}
+        disabled={locked}
+      />
 
       {locked ? null : (
         <Button label={fr.common.save} icon="check" onPress={submit} disabled={!changed || busy} />
@@ -110,7 +99,4 @@ export function StoryInfoForm({ story, busy, onSave, onCoverChange }: Props) {
 
 const styles = StyleSheet.create({
   form: { gap: spacing.lg },
-  switchRow: { flexDirection: 'row', alignItems: 'center' },
-  switchText: { flex: 1, gap: 2 },
-  switchLabel: { fontFamily: fonts.bodyBold, fontSize: 16 },
 });
