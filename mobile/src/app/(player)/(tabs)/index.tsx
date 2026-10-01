@@ -21,12 +21,15 @@ export default function Library() {
   const genres = useGenres();
   const saves = useSaves();
   const reloadSaves = saves.reload;
+  const reloadStories = stories.reload;
 
-  // La partie en cours change après chaque session de jeu : on la relit au retour sur l'onglet.
+  // La partie en cours change après chaque session de jeu, et un favori a pu changer depuis
+  // la fiche : on relit les deux au retour sur l'onglet.
   useFocusEffect(
     useCallback(() => {
       reloadSaves();
-    }, [reloadSaves]),
+      reloadStories();
+    }, [reloadSaves, reloadStories]),
   );
 
   // Toutes les parties commencées : leur fiche passe « En cours » et remonte en tête de liste

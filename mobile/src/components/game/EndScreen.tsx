@@ -12,11 +12,13 @@ type Props = {
   restarting: boolean;
   error?: string | null;
   onRestart: () => void;
+  // Présent quand l'histoire est terminée et que le joueur n'a pas encore donné son avis
+  onReview?: () => void;
   onBackToLibrary: () => void;
 };
 
 /** Écran plein affiché quand la partie est terminée (fin ou héros tombé). */
-export function EndScreen({ game, storyTitle, restarting, error, onRestart, onBackToLibrary }: Props) {
+export function EndScreen({ game, storyTitle, restarting, error, onRestart, onReview, onBackToLibrary }: Props) {
   const { colors } = useTheme();
   const dead = game.status === 'DEAD';
   const accentColor = dead ? colors.danger : colors.accent;
@@ -71,7 +73,13 @@ export function EndScreen({ game, storyTitle, restarting, error, onRestart, onBa
       ) : null}
 
       <View style={styles.actions}>
-        <Button label={fr.game.replay} onPress={confirmRestart} loading={restarting} />
+        {onReview ? <Button label={fr.reviews.write} onPress={onReview} /> : null}
+        <Button
+          label={fr.game.replay}
+          variant={onReview ? 'secondary' : 'primary'}
+          onPress={confirmRestart}
+          loading={restarting}
+        />
         <Button label={fr.game.backToLibrary} variant="ghost" onPress={onBackToLibrary} />
       </View>
     </View>

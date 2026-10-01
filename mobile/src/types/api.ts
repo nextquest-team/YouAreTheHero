@@ -53,6 +53,23 @@ export type StoryDetail = StorySummary & {
   mySave: { status: GameStatus; updatedAt: string } | null;
 };
 
+export type Review = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  author: { id: string; displayName: string };
+  createdAt: string;
+};
+
+export type ReviewList = {
+  avgRating: number | null;
+  count: number;
+  mine: Review | null;
+  // Vrai quand le joueur a terminé l'histoire : seul cas où il peut donner son avis.
+  canReview: boolean;
+  reviews: Review[];
+};
+
 export type SaveSummary = {
   story: { id: string; title: string; coverUrl: string | null };
   status: GameStatus;

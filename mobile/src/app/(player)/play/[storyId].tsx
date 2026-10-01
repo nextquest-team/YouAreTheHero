@@ -1,7 +1,7 @@
 import Feather from '@expo/vector-icons/Feather';
 import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -15,6 +15,7 @@ import { CombatScreen } from '@/components/game/CombatScreen';
 import { EndScreen } from '@/components/game/EndScreen';
 import { HeroBar } from '@/components/game/HeroBar';
 import { useGame } from '@/hooks/useGame';
+import { useReviews } from '@/hooks/useReviews';
 import { useStory } from '@/hooks/useStories';
 import { useTheme } from '@/hooks/useTheme';
 import { fr } from '@/i18n/fr';
@@ -29,6 +30,8 @@ export default function PlayScreen() {
   const insets = useSafeAreaInsets();
   const { game, loading, busy, error, reload, choose, attack, consumeItem, restart } = useGame(storyId);
   const storyMeta = useStory(storyId);
+  const reviews = useReviews(storyId);
+  const reloadReviews = reviews.reload;
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Le premier focus correspond au montage (état "started" déjà à jour, avec ses changements
@@ -42,8 +45,17 @@ export default function PlayScreen() {
         return;
       }
       reload();
-    }, [reload]),
+      reloadReviews();
+    }, [reload, reloadReviews]),
   );
+
+  // Histoire terminée : le joueur peut maintenant donner son avis, on relit ce droit.
+  const finished = game?.status === 'FINISHED';
+  useEffect(() => {
+    if (finished) reloadReviews();
+  }, [finished, reloadReviews]);
+  const openReview = () =>
+    router.push({ pathname: '/review/[storyId]', params: { storyId, title: storyMeta.data?.title ?? '' } });
 
   const backdrop = assetUrl(game?.scene.backgroundUrl);
   const over = game ? game.status !== 'IN_PROGRESS' : false;
@@ -60,6 +72,7 @@ export default function PlayScreen() {
             restarting={busy}
             error={error}
             onRestart={restart}
+            onReview={finished && reviews.canReview && !reviews.mine ? openReview : undefined}
             onBackToLibrary={() => router.dismissTo('/')}
           />
         </ScrollView>

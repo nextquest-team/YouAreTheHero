@@ -7,7 +7,10 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { DropCapText } from '@/components/common/DropCapText';
 import { LoadState } from '@/components/common/LoadState';
 import { parchment } from '@/components/common/parchment';
+import { FavoriteButton } from '@/components/library/FavoriteButton';
+import { ReviewsSection } from '@/components/reviews/ReviewsSection';
 import { Button, Input, Screen } from '@/components/ui';
+import { useReviews } from '@/hooks/useReviews';
 import { useStory } from '@/hooks/useStories';
 import { useTheme } from '@/hooks/useTheme';
 import { errorMessage } from '@/i18n/errorMessage';
@@ -23,18 +26,23 @@ export default function StoryDetailScreen() {
   const { colors } = useTheme();
   const story = useStory(id);
   const reload = story.reload;
+  const reviews = useReviews(id);
+  const reloadReviews = reviews.reload;
   const [textStats, setTextStats] = useState<Record<string, string>>({});
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
-  // Au retour du jeu, l'état de la partie a changé : on relit la fiche.
+  // Au retour du jeu ou de l'avis, la partie et les avis ont changé : on relit la fiche.
   useFocusEffect(
     useCallback(() => {
       reload();
-    }, [reload]),
+      reloadReviews();
+    }, [reload, reloadReviews]),
   );
 
   const goBack = () => router.back();
+  const openReview = () =>
+    router.push({ pathname: '/review/[storyId]', params: { storyId: id, title: story.data?.title ?? '' } });
   const openGame = () => router.push({ pathname: '/play/[storyId]', params: { storyId: id } });
 
   const start = async () => {
@@ -94,6 +102,9 @@ export default function StoryDetailScreen() {
             >
               <Feather name="arrow-left" size={22} color={colors.text} />
             </Pressable>
+            <View style={styles.coverFavorite}>
+              <FavoriteButton storyId={data.id} initial={data.isFavorite} />
+            </View>
           </View>
 
           <View style={styles.body}>
@@ -125,11 +136,6 @@ export default function StoryDetailScreen() {
                   </View>
                 ) : null}
               </View>
-              <Text style={[typography.caption, { color: colors.textMuted }]}>
-                {data.avgRating === null
-                  ? fr.storyDetail.noRating
-                  : `${fr.storyDetail.rating} : ${data.avgRating.toLocaleString('fr-FR')} / 5`}
-              </Text>
             </View>
 
             {data.summary ? (
@@ -193,6 +199,8 @@ export default function StoryDetailScreen() {
                 <Button label={fr.storyDetail.start} onPress={start} loading={starting} />
               )}
             </View>
+
+            <ReviewsSection reviews={reviews} onWrite={openReview} />
           </View>
         </>
       ) : null}
@@ -223,6 +231,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  coverFavorite: { position: 'absolute', top: spacing.lg, right: spacing.lg },
   body: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.xxl, gap: spacing.xl },
   titleBlock: { gap: 8 },
   title: { fontFamily: fonts.display, fontSize: 34, lineHeight: 36 },

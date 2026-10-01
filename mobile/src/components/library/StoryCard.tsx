@@ -5,6 +5,7 @@ import { fr } from '@/i18n/fr';
 import { fonts, hairline, offsetShadow, radius, spacing } from '@/theme';
 import type { StorySummary } from '@/types/api';
 
+import { DogEar } from './DogEar';
 import { type CoverVariant, StoryCover } from './StoryCover';
 
 type Props = { story: StorySummary; inProgress?: boolean; coverVariant?: CoverVariant; onPress: () => void };
@@ -21,7 +22,7 @@ export function StoryCard({ story, inProgress = false, coverVariant = 0, onPress
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${story.title}, ${fr.library.by} ${story.author.displayName}, ${story.genre}, ${status}`}
+      accessibilityLabel={`${story.title}, ${fr.library.by} ${story.author.displayName}, ${story.genre}, ${status}${story.isFavorite ? `, ${fr.favorites.inFavorites}` : ''}`}
       accessibilityHint={inProgress ? fr.library.resume : undefined}
       style={({ pressed }) => [
         styles.card,
@@ -49,6 +50,7 @@ export function StoryCard({ story, inProgress = false, coverVariant = 0, onPress
           <Text style={[styles.meta, { color: inProgress ? colors.accent : colors.text }]}>{action}</Text>
         </View>
       </View>
+      {story.isFavorite ? <DogEar /> : null}
     </Pressable>
   );
 }
