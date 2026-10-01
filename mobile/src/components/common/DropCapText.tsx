@@ -49,8 +49,12 @@ export function DropCapText({ text, textStyle, capColor, capFontFamily }: Props)
   const [bodyProbe, setBodyProbe] = useState<Metrics | null>(null);
   const [split, setSplit] = useState<{ at: number; width: number } | null>(null);
 
-  const cap = text.charAt(0);
-  const rest = text.slice(1);
+  // Une apostrophe reste collée à sa lettre (« L'hélicoptère ») ; un texte qui commence par
+  // un chiffre ou une ponctuation n'a pas de lettrine (le « 1 » d'IM Fell se lit comme un I).
+  const capLength = /^[\p{L}]['’]/u.test(text) ? 2 : 1;
+  const hasCap = /^\p{L}/u.test(text);
+  const cap = text.slice(0, capLength);
+  const rest = text.slice(capLength);
   const lineHeight = textStyle.lineHeight;
   const capFamily = capFontFamily ?? textStyle.fontFamily;
 
@@ -89,6 +93,8 @@ export function DropCapText({ text, textStyle, capColor, capFontFamily }: Props)
     const lines = event.nativeEvent.lines.slice(0, CAP_LINES);
     setSplit({ at: lines.reduce((length, line) => length + line.text.length, 0), width: headWidth });
   };
+
+  if (!hasCap) return <Text style={textStyle}>{text}</Text>;
 
   return (
     // Lu d'un bloc par VoiceOver : sinon la lettrine serait annoncée seule, puis « haque pas… »
