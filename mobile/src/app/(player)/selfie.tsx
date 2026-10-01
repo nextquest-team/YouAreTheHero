@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { type LayoutChangeEvent, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LiveText } from '@/components/common/LiveText';
 import { FaceOvalMask, faceOval } from '@/components/hero/FaceOvalMask';
@@ -156,7 +156,8 @@ export default function SelfieScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={[styles.root, { backgroundColor: colors.background }]}>
+    // Écran ouvert en modale plein écran : SafeAreaView y mesure une marge nulle, on prend celles de l'appareil
+    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Pressable
@@ -242,7 +243,7 @@ export default function SelfieScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
