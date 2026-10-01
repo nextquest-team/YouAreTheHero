@@ -279,6 +279,7 @@ Base : `http://<IP>:3000`. Doc Swagger sur `/docs`.
   - `422 NOT_IN_COMBAT` : attaque sans combat en cours ;
   - `422 ITEM_NOT_OWNED` : l'objet n'est pas dans l'inventaire ;
   - `422 ITEM_NOT_USABLE` : l'objet n'a pas d'effet d'utilisation.
+- Code d'erreur des avis : `403 STORY_NOT_FINISHED` : le joueur n'a pas de partie terminée (`FINISHED`) sur cette histoire.
 - Le dé du combat est injectable (`buildApp({ roll })`) : les tests fixent les jets pour des combats reproductibles.
 
 ```
@@ -293,11 +294,11 @@ DELETE /auth/me               → 204 ; supprime le compte, ses histoires, parti
 GET    /stories?q=&genre=&authorId=  histoires publiées (authorId : celles d'un créateur) → [{ id, title, summary, genre, coverUrl, hasCombat, author, avgRating, isFavorite }]
 GET    /stories/genres        genres distincts des histoires publiées, triés → ["Fantasy", ...]
 GET    /stories/:id           détail publié + définitions de stats + état de ma partie (mySave: { status, updatedAt } | null)
-PUT    /stories/:id/favorite  (bonus)
-DELETE /stories/:id/favorite  (bonus)
-GET    /me/favorites          (bonus)
-GET    /stories/:id/reviews   (bonus)
-POST   /stories/:id/reviews   { rating, comment }  (bonus, seulement si ma partie est FINISHED)
+PUT    /stories/:id/favorite  (bonus) → 204, idempotent ; 404 si l'histoire n'est pas publiée
+DELETE /stories/:id/favorite  (bonus) → 204, idempotent
+GET    /me/favorites          (bonus) mes favoris publiés, même forme que GET /stories, le plus récent d'abord
+GET    /stories/:id/reviews   (bonus) → { avgRating, count, mine, canReview, reviews: [{ id, rating, comment, author: { id, displayName }, createdAt }] }
+POST   /stories/:id/reviews   { rating: 1 à 5, comment?: 1000 car. max }  (bonus, seulement si ma partie est FINISHED, sinon 403 STORY_NOT_FINISHED) → 201 à la création, 200 si l'avis existant est remplacé
 
 # Création (A), réservée aux CREATOR propriétaires de l'histoire
 GET    /me/stories                           mes histoires, brouillons compris

@@ -43,7 +43,7 @@ async function getFavoriteStoryIds(userId: string, storyIds: string[]): Promise<
   return new Set(rows.map((row) => row.storyId));
 }
 
-async function toCards(rows: StoryRow[], userId: string): Promise<StoryCardDto[]> {
+export async function toCards(rows: StoryRow[], userId: string): Promise<StoryCardDto[]> {
   const storyIds = rows.map((row) => row.id);
   const [avgRatings, favoriteIds] = await Promise.all([getAvgRatings(storyIds), getFavoriteStoryIds(userId, storyIds)]);
 
@@ -60,7 +60,7 @@ async function toCards(rows: StoryRow[], userId: string): Promise<StoryCardDto[]
   }));
 }
 
-const storyRowColumns = {
+export const storyRowColumns = {
   id: stories.id,
   title: stories.title,
   summary: stories.summary,
