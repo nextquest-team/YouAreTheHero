@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "stories_author_title_idx" ON "stories" USING btree ("author_id",lower("title"));

@@ -11,9 +11,10 @@ Le projet dispose de trois jours et demi avant le rendu ; tout ce qui n'est pas 
 ### MVP (obligatoire pour jeudi)
 - Inscription et connexion. Le rôle **Joueur** ou **Créateur** est choisi à l'inscription et ne change plus. On arrive ensuite dans une navigation différente selon le rôle.
 - **Créateur**
-  - CRUD des histoires, avec publication et dépublication.
+  - CRUD des histoires, avec publication et dépublication. Une histoire est **avec ou sans combats** (réglage `has_combat`) : sans combats, pas d'ennemis ni de scène de combat.
+  - **Médiathèque** : les images que le créateur ajoute (photo ou galerie) pour illustrer ses histoires. Elle est commune à toutes ses histoires et sert à choisir une couverture, un décor, l'image d'un ennemi ou d'un objet.
   - Caractéristiques libres du héros (type `number` ou `text`).
-  - Ennemis.
+  - Ennemis : attaque, PV et bouclier, qui servent au combat, plus des caractéristiques libres affichées au joueur. Le butin, remporté quand l'ennemi est vaincu, est une liste d'effets (objets et stats).
   - Objets de l'histoire (CRUD), avec des effets à l'usage facultatifs pour les consommables.
   - Scènes : texte et image de fond (photo ou galerie).
   - Choix entre scènes, avec condition et effets. Une condition ou un effet peut porter sur une stat ou sur un objet.
@@ -42,7 +43,7 @@ Le projet dispose de trois jours et demi avant le rendu ; tout ce qui n'est pas 
 
 | Couche | Choix |
 |---|---|
-| Front | Expo SDK 57, Expo Router (routes dans `src/app/`), TypeScript strict |
+| Front | Expo SDK 57, Expo Router (routes dans `mobile/src/app/`), TypeScript strict |
 | Modules Expo | `expo-camera`, `expo-image-picker`, `expo-image-manipulator`, `expo-secure-store` (token), `@react-native-async-storage/async-storage` (thème) |
 | Back | Node 22, Fastify 5, TypeScript, Drizzle ORM, Zod (via `fastify-type-provider-zod`), `@fastify/swagger` |
 | Base | PostgreSQL 16 dans Docker |
@@ -53,7 +54,9 @@ Le choix de Fastify et Drizzle s'appuie sur une stack déjà utilisée par B sur
 
 > Front : on installe avec `npx expo install <package>`, jamais avec `npm install`.
 > Démo : l'API tourne en Docker sur un Mac et le téléphone passe par le Wi-Fi.
-> Mettre `EXPO_PUBLIC_API_URL=http://<IP-du-Mac>:3000` dans `.env`, qui est gitignoré (un `.env.example` est commité).
+> Mettre `EXPO_PUBLIC_API_URL=http://<IP-du-Mac>:3000` dans `mobile/.env`, qui est gitignoré (un `.env.example` est commité).
+
+Le dépôt est un monorepo à deux projets indépendants, `mobile/` (l'app Expo) et `api/` (l'API Fastify), chacun avec son propre `package.json` et son propre `package-lock.json`, sans workspaces npm.
 
 ---
 
@@ -62,9 +65,10 @@ Le choix de Fastify et Drizzle s'appuie sur une stack déjà utilisée par B sur
 | Table | Champs |
 |---|---|
 | **users** | id (uuid), email (unique), password_hash, display_name, role (`PLAYER` / `CREATOR`), avatar_url (nullable : selfie par défaut du héros), created_at |
-| **stories** | id, author_id → users, title, summary, genre, cover_url, start_scene_id → scenes (nullable), attack_stat_id → stat_definitions (nullable), hp_stat_id → stat_definitions (nullable), published (bool), published_at, created_at, updated_at |
+| **stories** | id, author_id → users, title, summary, genre, cover_url, has_combat (bool, `false` par défaut), start_scene_id → scenes (nullable), attack_stat_id → stat_definitions (nullable), hp_stat_id → stat_definitions (nullable), published (bool), published_at, created_at, updated_at |
+| **media** | id, owner_id → users (`ON DELETE CASCADE`), url, created_at. La médiathèque du créateur, commune à toutes ses histoires |
 | **stat_definitions** | id, story_id, name, type (`number` / `text`), default_value (texte, converti selon le type), min, max, sort_order |
-| **enemies** | id, story_id, name, image_url, attack (int), hp (int) |
+| **enemies** | id, story_id, name, image_url, attack (int), hp (int), shield (int, `0` par défaut), extra_stats (jsonb, `[]` par défaut), defeat_effects (jsonb, `[]` par défaut), sort_order |
 | **items** | id, story_id, name, description, image_url, use_effects (jsonb, nullable : si renseigné, l'objet est un consommable), sort_order |
 | **scenes** | id, story_id, title, text, background_url, is_ending, enemy_id → enemies (nullable), win_scene_id → scenes (nullable), lose_scene_id → scenes (nullable), on_enter_effects (jsonb, `[]` par défaut), sort_order |
 | **choices** | id, from_scene_id → scenes, to_scene_id → scenes, label, condition (jsonb, nullable), effects (jsonb, `[]` par défaut), sort_order |
@@ -72,34 +76,36 @@ Le choix de Fastify et Drizzle s'appuie sur une stack déjà utilisée par B sur
 | **favorites** | user_id, story_id, created_at. Clé primaire (user_id, story_id) |
 | **reviews** | id, user_id, story_id, rating (1 à 5), comment, created_at. Unique (user_id, story_id) |
 
-Les ennemis utilisent des colonnes `attack` et `hp` dédiées plutôt qu'un champ JSON : le combat ne porte que sur ces deux valeurs.
+Les ennemis utilisent des colonnes `attack`, `hp` et `shield` dédiées : ce sont les seules valeurs qu'utilise le combat. Tout le reste (« Rapidité », « Élément »…) va dans `extra_stats`, qui n'est qu'affiché au joueur.
 
 **Formats JSON**
 - `condition`, typée :
   - `{ "type": "stat", "statId": "<uuid>", "op": ">=" | "<=" | "==", "value": 5 }`
   - `{ "type": "item", "itemId": "<uuid>", "op": "has" | "not_has" }`
-- `effects`, `on_enter_effects` et `use_effects` ont le même format, une liste d'effets typés :
+- `extra_stats` (ennemis) : `[{ "name": "Rapidité", "value": "3" }]`. Nom et valeur libres, en texte.
+- `effects`, `on_enter_effects`, `use_effects` et `defeat_effects` ont le même format, une liste d'effets typés :
   - `{ "type": "stat", "statId": "<uuid>", "delta": -2 }`
   - `{ "type": "item", "itemId": "<uuid>", "qty": 1 }` (une quantité négative retire l'objet)
   - Un même module back les valide (Zod) et les applique : `engine/effects.ts`.
 - Les objets sont référencés par **id**, comme les stats.
-- `combat` : `{ "enemyId": "<uuid>", "enemyHp": 8, "log": ["..."] }`
+- `combat` : `{ "enemyId": "<uuid>", "enemyHp": 8, "enemyShield": 3, "log": ["..."] }`
 - Les stats sont référencées par **id** et jamais par nom : renommer « Force » ne casse rien.
 - Seules les stats de type `number` servent dans les conditions, les effets et le combat.
 
 **Suppressions**
 - Supprimer une histoire supprime en cascade tout ce qui en dépend : stats, ennemis, scènes, choix, saves, favoris, avis.
-- Supprimer une scène supprime aussi les choix qui y mènent. Les champs `start_scene_id`, `win_scene_id` et `lose_scene_id` qui la visaient passent à `NULL`.
-- Supprimer un ennemi remet `enemy_id` à `NULL` sur les scènes concernées.
-- `DELETE /me/items/:itemId` renvoie `409 { usedIn: [...] }` si l'objet apparaît dans une condition ou un effet (choix, scène ou autre objet). C'est la même logique que pour les stats.
+- `DELETE /me/scenes/:sceneId` renvoie `409 SCENE_IN_USE { usedIn: [...] }` tant qu'elle est la scène de départ, l'issue d'un combat (`win_scene_id` / `lose_scene_id`) ou la cible d'un choix d'une autre scène. Sinon la scène est supprimée avec ses propres choix. En base, les clés étrangères restent un filet de sécurité : les choix qui y mènent sont supprimés, et `start_scene_id`, `win_scene_id` et `lose_scene_id` passent à `NULL`.
+- `DELETE /me/enemies/:enemyId` renvoie `409 ENEMY_IN_USE { usedIn: [...] }` tant qu'une scène le combat (sinon la base remettrait `enemy_id` à `NULL` et la scène deviendrait une impasse).
+- `DELETE /me/items/:itemId` renvoie `409 { usedIn: [...] }` si l'objet apparaît dans une condition ou un effet (choix, scène, autre objet ou butin d'un ennemi). C'est la même logique que pour les stats.
+- `DELETE /me/media/:mediaId` renvoie `409 { usedIn: [...] }` si l'image sert encore de couverture, de décor, ou d'image d'ennemi ou d'objet. Sinon, la ligne et le fichier sont supprimés.
 - Supprimer une stat met `stories.attack_stat_id` et `stories.hp_stat_id` à `NULL` (`ON DELETE SET NULL`).
-  - `DELETE /me/stats/:statId` renvoie `409 { usedIn: [...] }` si la stat est utilisée dans une condition ou un effet, puisque le JSON n'est protégé par aucune contrainte de base. On cherche partout : choix, `on_enter_effects` des scènes, `use_effects` des objets.
+  - `DELETE /me/stats/:statId` renvoie `409 { usedIn: [...] }` si la stat est utilisée dans une condition ou un effet, puisque le JSON n'est protégé par aucune contrainte de base. On cherche partout : choix, `on_enter_effects` des scènes, `use_effects` des objets, `defeat_effects` des ennemis.
 - `saves.current_scene_id` : `ON DELETE CASCADE`, par sécurité.
 - **Une histoire publiée n'est pas modifiable.** Toutes les routes d'édition `/me/...` renvoient `409` tant qu'elle est publiée : il faut d'abord la dépublier.
   - `unpublish` **supprime explicitement** les saves de l'histoire. La cascade ne joue qu'à la suppression de l'histoire, pas à la dépublication.
 
 **Images** : le back ne stocke et ne renvoie que des **chemins relatifs** (`/uploads/abc.jpg`).
-- Le front construit l'URL complète à un seul endroit, avec `assetUrl()` dans `src/services/client.ts` à partir de `EXPO_PUBLIC_API_URL`.
+- Le front construit l'URL complète à un seul endroit, avec `assetUrl()` dans `mobile/src/services/client.ts` à partir de `EXPO_PUBLIC_API_URL`.
 - Changer d'IP le jour J ne casse donc aucune image.
 
 ---
@@ -135,7 +141,8 @@ Le moteur tourne **côté back**. Le front affiche l'état que l'API renvoie et 
    - `POST /me/scenes/:sceneId/choices` renvoie `422` sur une scène de combat, et `PATCH /me/scenes/:sceneId` avec un `enemyId` renvoie `422` si la scène a déjà des choix.
    - Le joueur a une seule action, « Attaquer ».
    - Chaque tour, le serveur calcule `stat d'attaque du héros + 1d6` contre `attack de l'ennemi + 1d6`. Le plus faible perd 2 PV. En cas d'égalité, personne ne perd rien.
-   - Si l'ennemi tombe à 0 PV, le joueur part sur `win_scene_id`. La récompense (objet, stat) se règle dans les `on_enter_effects` de la scène de victoire, sans champ en plus.
+   - **Bouclier** : c'est une réserve de points qui absorbe les dégâts avant les PV de l'ennemi. Avec un bouclier de 3, le premier coup réduit le bouclier à 1, et le deuxième retire 1 au bouclier et 1 PV. Le bouclier ne se recharge pas pendant le combat. L'ennemi n'est donc jamais invincible.
+   - Si l'ennemi tombe à 0 PV, le serveur applique son **butin** (`defeat_effects`, qui apparaît dans `changes`), puis le joueur part sur `win_scene_id`.
    - Si le héros tombe à 0 PV :
      - avec une scène de défaite, il **garde 1 PV** et part sur `lose_scene_id` ;
      - sans scène de défaite, la partie passe en `DEAD`.
@@ -145,13 +152,14 @@ Le moteur tourne **côté back**. Le front affiche l'état que l'API renvoie et 
 - Une scène de départ est définie.
 - L'histoire a au moins une scène `is_ending`.
 - Toute scène qui n'est pas une fin a au moins un choix ou un combat.
+- Une histoire sans combats (`has_combat = false`) n'a aucune scène de combat. Ses stats d'attaque et de PV sont facultatives.
 - Toute scène de combat a une scène de victoire, et l'histoire a une stat d'attaque et une stat de PV.
 - Toute scène qui n'est ni une fin ni un combat a au moins un choix sans condition.
 - Aucune scène de combat n'a de choix.
 - La stat PV (`hp_stat_id`) est de type `number` et a un min de 0 ou pas de min. Sinon le héros ne peut pas mourir.
 - La valeur par défaut de la stat PV est supérieure à 0. Sinon le héros est mort dès le départ.
 - Une scène `is_ending` n'a pas d'ennemi. Sinon on ne saurait pas s'il faut terminer la partie ou lancer le combat.
-- Tout `statId` et tout `itemId` cité dans une condition ou un effet existe bien dans l'histoire. Les stats citées par un effet ou une condition sont de type `number`.
+- Tout `statId` et tout `itemId` cité dans une condition ou un effet (butin des ennemis compris) existe bien dans l'histoire. Les stats citées par un effet ou une condition sont de type `number`.
 - Aucune scène n'est inaccessible depuis le départ. C'est un avertissement, pas une erreur.
 
 ---
@@ -166,7 +174,9 @@ Chacun fait le **back et le front** de ses fonctionnalités. B pose le socle bac
 |---|:-:|:-:|:-:|
 | CRUD des histoires : front complet. Back : publication, dépublication, verrou `409` (le CRUD back de base est écrit par B comme module d'exemple) | ✅ | ✅ | 2 |
 | Éditeur de caractéristiques, avec le choix de la stat d'attaque et de la stat de PV | ✅ | ✅ | 3 |
-| CRUD des ennemis | ✅ | ✅ | 2 |
+| Réglage « avec ou sans combats » : onglet Ennemis et section combat masqués sans combats, `422` si des scènes ont un ennemi | ✅ | ✅ | 1 |
+| **Médiathèque** : table `media`, routes `/me/media`, onglet dédié, sélecteur d'image réutilisé (couverture, décor, ennemi, objet) | ✅ | ✅ | 3 |
+| CRUD des ennemis (attaque, PV, bouclier, caractéristiques libres, butin avec l'éditeur d'effets) | ✅ | ✅ | 3 |
 | CRUD des objets (nom, image, description, effets à l'usage) | ✅ | ✅ | 2 |
 | Éditeur d'effets et de conditions typés (stat ou objet), réutilisé pour les choix, les `on_enter_effects` et les `use_effects` | | ✅ | 2 |
 | Éditeur de scènes et de choix (destination, condition, effets). Section « Choix » masquée sur une scène de combat | ✅ | ✅ | 5 |
@@ -175,7 +185,7 @@ Chacun fait le **back et le front** de ses fonctionnalités. B pose le socle bac
 | Validation avant publication, avec ses tests Vitest (un test par règle) | ✅ | | 3 |
 | **Thème clair et sombre**, bascule dans le profil, persistance AsyncStorage, composants UI communs (`Button`, `Card`, `Input`, `Screen`) | | ✅ | 3 |
 | Icône et splash screen dans `app.json` | | ✅ | 1 |
-| **Total** | | | **28** |
+| **Total** | | | **33** |
 
 ### B : Joueur, auth et moteur (Jean-Baptiste)
 
@@ -187,7 +197,7 @@ Chacun fait le **back et le front** de ses fonctionnalités. B pose le socle bac
 | Bibliothèque des histoires publiées, **recherche et filtre par genre**, fiche d'une histoire | ✅ | ✅ | 3 |
 | **Repo et CI/CD** : création du repo, invitation, protection des branches, workflows `mobile` et `api`, image Docker sur GHCR (section 11) | | | 2 |
 | **Moteur de jeu** : affichage d'une scène, conditions, effets, fin, mort. Tests Vitest : conditions, effets bornés, mort, combat avec un dé injectable pour des tests reproductibles | ✅ | ✅ | 6 |
-| Combat au tour par tour | ✅ | ✅ | 4 |
+| Combat au tour par tour, avec le bouclier de l'ennemi et son butin (`defeat_effects`) | ✅ | ✅ | 4 |
 | Sauvegarde et reprise, écran « Mes parties » | ✅ | ✅ | 2 |
 | Inventaire dans le moteur : effets typés, `on_enter_effects` à la première visite, `POST /use` (en combat aussi), `changes`, avec leurs tests. Côté front : panneau inventaire et affichage des changements | ✅ | ✅ | 4 |
 | **Selfie du héros** : caméra frontale, recadrage en cercle. Enregistré sur le profil (`users.avatar_url`) et repris par défaut dans chaque partie | ✅ | ✅ | 3 |
@@ -197,7 +207,7 @@ Chacun fait le **back et le front** de ses fonctionnalités. B pose le socle bac
 ### Code partagé : qui l'écrit, qui l'utilise
 - **B** écrit :
   - le plugin d'auth back (`app.authenticate`, `app.requireRole('CREATOR')`),
-  - le client API front (`src/services/client.ts`, qui ajoute le token et gère les erreurs),
+  - le client API front (`mobile/src/services/client.ts`, qui ajoute le token et gère les erreurs),
   - le `AuthProvider`,
   - le seed.
   - A utilise tout ça.
@@ -212,7 +222,7 @@ Chacun fait le **back et le front** de ses fonctionnalités. B pose le socle bac
 ## 6. Navigation (Expo Router)
 
 ```
-src/app/
+mobile/src/app/
 ├── _layout.tsx                 # AuthProvider + ThemeProvider, redirection selon le rôle (Stack.Protected)
 ├── (auth)/login.tsx            # B
 ├── (auth)/register.tsx         # B (choix du rôle)
@@ -224,11 +234,13 @@ src/app/
 ├── (player)/story/[id].tsx     # B : fiche de l'histoire (Commencer / Reprendre, avis)
 ├── (player)/play/[storyId].tsx # B : écran de jeu (scène, choix, combat, inventaire et changements)
 ├── (player)/selfie.tsx         # B : caméra frontale
-├── (creator)/_layout.tsx       # A : Tabs
+├── (creator)/_layout.tsx       # A : Stack (onglets, puis éditeur par-dessus)
+├── (creator)/(tabs)/           # A : Tabs
 │   ├── index.tsx               #   Mes histoires
+│   ├── media.tsx               #   Médiathèque
 │   └── profile.tsx             #   → composant Profil de A
-└── (creator)/story/[id]/       # A : Stack d'édition
-    ├── index.tsx               #   infos, couverture, publication
+└── (creator)/editor/[id]/      # A : Stack d'édition (/editor, pour ne pas partager l'URL /story/[id] du joueur)
+    ├── index.tsx               #   infos, couverture, avec ou sans combats, publication
     ├── stats.tsx
     ├── enemies.tsx
     ├── items.tsx               #   objets
@@ -238,10 +250,10 @@ src/app/
 
 Règles du cours à respecter :
 - **aucun `fetch` dans un composant** : on passe par services, puis hooks, puis composants ;
-- **aucun texte codé en dur** : les libellés vont dans `src/i18n/fr.ts`, avec une clé par écran.
+- **aucun texte codé en dur** : les libellés vont dans `mobile/src/i18n/fr.ts`, avec une clé par écran.
 
 ```
-src/
+mobile/src/
 ├── services/   client.ts (B), auth.ts, stories.ts, play.ts (B) | creator.ts, uploads.ts (A)
 ├── hooks/      useAuth, useStories, useGame (B) | useMyStories, useSceneEditor, useTheme (A)
 ├── components/ ui/ (A) | game/ (B) | editor/ (A)
@@ -255,8 +267,20 @@ src/
 ## 7. Contrat d'API (à figer lundi soir)
 
 Base : `http://<IP>:3000`. Doc Swagger sur `/docs`.
-- Les erreurs ont toutes la forme `{ "error": { "code": "...", "message": "..." } }`.
+- Les erreurs ont toutes la forme `{ "error": { "code": "...", "message": "..." } }`. Les détails éventuels sont rangés **dans** `error` : `error.usedIn`, `error.errors`, `error.warnings`, `error.field`...
 - `401` : pas de token. `403` : mauvais rôle, ou histoire d'un autre auteur. `404` : ressource introuvable. `422` : validation.
+- Un élément de `usedIn` a la forme `{ kind, id, storyId, label }`, où `label` est le nom ou le titre à afficher. Pour une image, `kind` vaut `story`, `scene`, `enemy` ou `item`.
+- Codes d'erreur du jeu :
+  - `404 NO_SAVE` : pas de partie sur cette histoire ;
+  - `422 GAME_OVER` : partie terminée ou héros mort ;
+  - `422 IN_COMBAT` : choix impossible pendant un combat ;
+  - `422 INVALID_CHOICE` : le choix ne part pas de la scène courante ;
+  - `422 CHOICE_LOCKED` : la condition du choix n'est pas remplie ;
+  - `422 NOT_IN_COMBAT` : attaque sans combat en cours ;
+  - `422 ITEM_NOT_OWNED` : l'objet n'est pas dans l'inventaire ;
+  - `422 ITEM_NOT_USABLE` : l'objet n'a pas d'effet d'utilisation.
+- Code d'erreur des avis : `403 STORY_NOT_FINISHED` : le joueur n'a pas de partie terminée (`FINISHED`) sur cette histoire.
+- Le dé du combat est injectable (`buildApp({ roll })`) : les tests fixent les jets pour des combats reproductibles.
 
 ```
 # Auth (B)
@@ -264,27 +288,29 @@ POST   /auth/register         { email, password, displayName, role } → { token
 POST   /auth/login            { email, password }                    → { token, user }
 GET    /auth/me                                                      → user
 PATCH  /auth/me               { displayName?, avatarUrl? }           → user
+DELETE /auth/me               → 204 ; supprime le compte, ses histoires, parties, médiathèque et images (RGPD)
 
 # Bibliothèque (B), réservée aux PLAYER
-GET    /stories?q=&genre=     histoires publiées → [{ id, title, summary, genre, coverUrl, author, avgRating, isFavorite }]
-GET    /stories/:id           détail publié + définitions de stats + état de ma partie
-PUT    /stories/:id/favorite  (bonus)
-DELETE /stories/:id/favorite  (bonus)
-GET    /me/favorites          (bonus)
-GET    /stories/:id/reviews   (bonus)
-POST   /stories/:id/reviews   { rating, comment }  (bonus, seulement si ma partie est FINISHED)
+GET    /stories?q=&genre=&authorId=  histoires publiées (authorId : celles d'un créateur) → [{ id, title, summary, genre, coverUrl, hasCombat, author, avgRating, isFavorite }]
+GET    /stories/genres        genres distincts des histoires publiées, triés → ["Fantasy", ...]
+GET    /stories/:id           détail publié + définitions de stats + état de ma partie (mySave: { status, updatedAt } | null)
+PUT    /stories/:id/favorite  (bonus) → 204, idempotent ; 404 si l'histoire n'est pas publiée
+DELETE /stories/:id/favorite  (bonus) → 204, idempotent
+GET    /me/favorites          (bonus) mes favoris publiés, même forme que GET /stories, le plus récent d'abord
+GET    /stories/:id/reviews   (bonus) → { avgRating, count, mine, canReview, reviews: [{ id, rating, comment, author: { id, displayName }, createdAt }] }
+POST   /stories/:id/reviews   { rating: 1 à 5, comment?: 1000 car. max }  (bonus, seulement si ma partie est FINISHED, sinon 403 STORY_NOT_FINISHED) → 201 à la création, 200 si l'avis existant est remplacé
 
 # Création (A), réservée aux CREATOR propriétaires de l'histoire
 GET    /me/stories                           mes histoires, brouillons compris
-POST   /me/stories                           { title, summary, genre, coverUrl? }
-GET    /me/stories/:id                       histoire complète (stats, ennemis, scènes, choix)
-PATCH  /me/stories/:id                       { ..., startSceneId, attackStatId, hpStatId }
-DELETE /me/stories/:id
+POST   /me/stories                           { title, summary, genre, coverUrl?, hasCombat? }
+GET    /me/stories/:id                       histoire complète (stats, ennemis, objets, scènes, choix)
+PATCH  /me/stories/:id                       { ..., hasCombat, startSceneId, attackStatId, hpStatId }
+DELETE /me/stories/:id                    supprime aussi ses images que rien d'autre n'utilise
 POST   /me/stories/:id/publish               → 200, ou 422 { errors: [...], warnings: [...] }
 POST   /me/stories/:id/unpublish
 POST   /me/stories/:id/stats                 { name, type, defaultValue, min?, max? }
 PATCH  /me/stats/:statId      DELETE /me/stats/:statId
-POST   /me/stories/:id/enemies               { name, imageUrl?, attack, hp }
+POST   /me/stories/:id/enemies               { name, imageUrl?, attack, hp, shield?, extraStats?, defeatEffects? }
 PATCH  /me/enemies/:enemyId   DELETE /me/enemies/:enemyId
 POST   /me/stories/:id/items                 { name, description?, imageUrl?, useEffects? }
 PATCH  /me/items/:itemId      DELETE /me/items/:itemId
@@ -293,17 +319,28 @@ PATCH  /me/scenes/:sceneId    DELETE /me/scenes/:sceneId
 POST   /me/scenes/:sceneId/choices           { toSceneId, label, condition?, effects? }
 PATCH  /me/choices/:choiceId  DELETE /me/choices/:choiceId
 # toute route d'édition /me/... → 409 si l'histoire est publiée
+# POST/PATCH /me/stories → 409 TITLE_TAKEN si le créateur a déjà une histoire de ce titre (casse ignorée)
 # DELETE /me/stats/:statId → 409 { usedIn: [...] } si la stat est utilisée
 # DELETE /me/items/:itemId → 409 { usedIn: [...] } si l'objet est utilisé
-# POST /me/scenes/:sceneId/choices → 422 si la scène est une scène de combat
-# PATCH /me/scenes/:sceneId { enemyId } → 422 si la scène a déjà des choix
+# DELETE /me/enemies/:enemyId → 409 ENEMY_IN_USE { usedIn: [...] } si une scène le combat
+# DELETE /me/scenes/:sceneId → 409 SCENE_IN_USE { usedIn: [...] } si elle est la scène de départ, une issue de combat ou la cible d'un choix
+# DELETE /me/media/:mediaId → 409 { usedIn: [...] } si l'image est utilisée
+# POST /me/scenes/:sceneId/choices → 422 COMBAT_SCENE si la scène est une scène de combat
+# PATCH /me/scenes/:sceneId { enemyId } → 422 SCENE_HAS_CHOICES si la scène a déjà des choix, ou 422 COMBAT_DISABLED si l'histoire est sans combats (aussi au POST)
+# id cité (scène, ennemi, stat, objet) hors de l'histoire, ou stat texte dans une condition/un effet → 422 INVALID_REFERENCE { field }
+# PATCH /me/stories/:id { hasCombat: false } → 422 si des scènes ont encore un ennemi
 
-# Upload (A), pour tout utilisateur connecté
+# Médiathèque (A), réservée aux CREATOR, commune à toutes leurs histoires
+GET    /me/media                             mes images, les plus récentes d'abord → [{ id, url, createdAt }]
+POST   /me/media              multipart, champ "file" → { id, url, createdAt }
+DELETE /me/media/:mediaId
+
+# Upload (A), pour tout utilisateur connecté (selfie du joueur, etc.)
 POST   /uploads               multipart, champ "file" → { url }
 
 # Jeu (B), réservé aux PLAYER
 GET    /me/saves                             mes parties → [{ story, status, updatedAt }]
-POST   /play/:storyId/start   { textStats?: { statId: "valeur" }, heroFaceUrl? } → GameState   (users.avatar_url par défaut)
+POST   /play/:storyId/start   { textStats?: { statId: "valeur" }, heroFaceUrl? } → GameState   (users.avatar_url par défaut ; 50 caractères max par texte ; recommence une partie existante)
 GET    /play/:storyId                        → GameState
 POST   /play/:storyId/choose  { choiceId }   → GameState
 POST   /play/:storyId/combat  { action: "attack" } → GameState
@@ -319,13 +356,15 @@ type GameState = {
   status: 'IN_PROGRESS' | 'FINISHED' | 'DEAD';
   scene: { id: string; title: string; text: string; backgroundUrl: string | null; isEnding: boolean };
   choices: { id: string; label: string; locked: boolean; conditionLabel: string | null }[]; // vide pendant un combat
-  stats: { id: string; name: string; type: 'number' | 'text'; value: number | string }[];
+  stats: { id: string; name: string; type: 'number' | 'text'; value: number | string; min: number | null; max: number | null }[];
+  hpStatId: string | null;                           // stat de PV de l'histoire, pour la jauge « PV 12 / 20 »
   heroFaceUrl: string | null;
   inventory: { id: string; name: string; imageUrl: string | null; description: string | null; qty: number; usable: boolean }[];
   changes: { label: string; kind: 'stat' | 'item'; delta: number }[];  // effets appliqués par la dernière action
   combat: null | {
-    enemy: { name: string; imageUrl: string | null; attack: number; hpMax: number };
+    enemy: { name: string; imageUrl: string | null; attack: number; hpMax: number; shieldMax: number; extraStats: { name: string; value: string }[] };
     enemyHp: number;
+    enemyShield: number;
     heroHp: number;
     log: string[];                                   // ex. "Tu fais 9, le gobelin 6 : il perd 2 PV"
   };
@@ -372,7 +411,7 @@ docker-compose.yml             # à la racine : postgres + api
 | Quand | A : Loreleï | B : Jean-Baptiste | Jalon |
 |---|---|---|---|
 | **Lun 28 soir** | A clone le repo une fois la structure prête (section 10), thème et composants UI, layouts `(creator)`, vérifier Expo Go SDK 57 sur son téléphone | Structure complète du repo (template Expo neuf + `api/`), puis `develop` et protections, workflows CI. Docker, Fastify, schéma Drizzle complet, migration, seed, plugin d'auth et routes d'auth, module d'exemple `/me/stories`, vérifier Expo Go SDK 57 sur son téléphone | Contrat figé, `docker compose up` fonctionne des deux côtés, Expo Go OK (sinon development build) |
-| **Mar 29** | CRUD des histoires (front), stats, ennemis et objets (back et front), route d'upload, photo et galerie | Écrans d'auth, client API, redirection selon le rôle, bibliothèque et recherche, `start` et `choose` côté back, avec les effets typés et `on_enter_effects` | Se connecter dans chaque rôle, créer une histoire avec sa couverture |
+| **Mar 29** | Route d'upload et médiathèque (photo et galerie), CRUD des histoires (front, avec ou sans combats), stats, ennemis et objets (back et front) | Écrans d'auth, client API, redirection selon le rôle, bibliothèque et recherche, `start` et `choose` côté back, avec les effets typés et `on_enter_effects` | Se connecter dans chaque rôle, créer une histoire avec sa couverture |
 | **Mer 30** | Éditeur de scènes et de choix (avec les choix verrouillés), éditeur d'effets et de conditions stat ou objet, configuration des combats | Écran de jeu, saves, « Mes parties », combat, inventaire, `/use` et `changes`, selfie | **Soir : jouer dans l'app une histoire créée dans l'app** |
 | **Jeu 01 matin** | Validation de publication, puis dark mode et persistance, icône et splash, contraste | Favoris, puis avis si le temps le permet | Test VoiceOver croisé |
 | **Jeu 01 aprem** | Tests croisés, histoire de démo, répétition | Tests croisés, README (installation et lancement), répétition | Merge de `develop` dans `main`, rendu |
@@ -389,7 +428,7 @@ docker-compose.yml             # à la racine : postgres + api
   - Une PR vers `develop`, relue par l'autre, et on merge au moins une fois par jour.
   - Chacun commite avec son propre compte.
 - **Avant chaque PR**
-  - Front : `npx expo lint` et `npx tsc --noEmit`.
+  - Front : `npx expo lint` et `npx tsc --noEmit`, dans `mobile/`.
   - Back : `npm run typecheck` et `npm test` dans `api/`.
   - La CI relance tout ça de toute façon : une PR rouge ne se merge pas.
 - **Tests croisés** : A joue les histoires, B en crée.
@@ -402,7 +441,7 @@ docker-compose.yml             # à la racine : postgres + api
   - A clone le repo :
     ```bash
     git clone https://github.com/nextquest-team/YouAreTheHero.git
-    cd YouAreTheHero && npm install
+    cd YouAreTheHero/mobile && npm install
     ```
   - Ensuite, tout passe par une PR vers `develop`.
 
@@ -419,7 +458,7 @@ Juste ce qu'il faut pour 3 jours et demi, pas plus.
 - Les règles s'appliquent **aussi aux admins**. Sans ça, les deux administrateurs pourraient les contourner.
 - `develop` est la branche par défaut, donc les PR la ciblent automatiquement. Le jeudi, une PR fusionne `develop` dans `main`.
 
-**`.github/workflows/mobile.yml`**, sur chaque PR et chaque push vers `develop` ou `main`
+**`.github/workflows/mobile.yml`**, sur chaque PR et chaque push vers `develop` ou `main`, lancé dans `mobile/`
 - `actions/setup-node` en Node 22, avec le cache npm.
 - `npm ci`, `npx expo lint`, `npx tsc --noEmit`.
 

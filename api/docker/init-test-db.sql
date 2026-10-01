@@ -1,0 +1,1 @@
+CREATE DATABASE hero_test;
