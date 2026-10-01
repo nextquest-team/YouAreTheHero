@@ -2,8 +2,8 @@
 
 Application mobile de « livres dont vous êtes le héros ».
 
-- Un **créateur** écrit des histoires : scènes, choix, caractéristiques du héros, ennemis et objets.
-- Un **joueur** les parcourt, avec des choix conditionnels, des combats, un inventaire et des parties sauvegardées.
+- Un **créateur** écrit des histoires : scènes, choix, caractéristiques du héros, ennemis et objets, avec une médiathèque pour ses images. Une histoire peut être avec ou sans combats.
+- Un **joueur** les parcourt, avec des choix conditionnels, des combats, un inventaire et des parties sauvegardées. Il peut prendre un selfie comme portrait de son héros, mettre des histoires en favoris, consulter la page d'un auteur et laisser un avis sur une histoire qu'il a terminée.
 
 ## Stack
 
@@ -19,7 +19,7 @@ Le périmètre, le modèle de données, les règles du jeu et le contrat d'API s
 
 ## Prérequis
 
-- Node 22 et npm
+- Node 22.12 ou plus, et npm
 - Docker (Docker Desktop ou Colima)
 - L'application **Expo Go** (SDK 57) sur le téléphone
 
@@ -102,6 +102,11 @@ La CI relance ces commandes sur chaque PR. Une PR dont les checks sont rouges ne
   - `mobile/src/services/`, `mobile/src/hooks/`, `mobile/src/components/` : appels à l'API, logique et composants. Aucun `fetch` dans un composant.
   - `mobile/src/i18n/fr.ts` : tous les textes de l'interface
 - `api/` : l'API Fastify
+  - `api/src/modules/` : un module par domaine (`auth`, `catalog`, `play`, `creator`, `uploads`, `favorites`, `reviews`)
+  - `api/src/engine/` : le moteur de jeu (conditions, effets, combats)
+  - `api/src/db/` : le schéma Drizzle et le seed (`seed-stories/`, une histoire par fichier) ; `api/drizzle/` : les migrations ; `api/seed-assets/` : les images du seed
+- `tools/illustrations/` : les scripts Python qui dessinent les illustrations des histoires du seed (`pip install pillow`, puis `python3 export.py`, qui les exporte dans `api/seed-assets/`)
+- `docs/conception.md` : la conception (périmètre, modèle de données, règles, contrat d'API)
 - `.github/workflows/` : la CI (`mobile`, `api`) et la publication de l'image de l'API
 
 ## Workflow Git
